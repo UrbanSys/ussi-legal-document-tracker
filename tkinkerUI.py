@@ -5,6 +5,7 @@ A prototype of the UI in tkinker
 """
 import tkinter as tk
 from tkinter import messagebox as mb
+from data import DataStorage
 
 try:
     import genVersionNumber
@@ -25,6 +26,8 @@ class tkinkerUI(tk.Tk):
         build_text = __VERSION_TEXT__
         self.title("USSI Document Tracker - %s"%build_text)
         self.geometry("1000x900")
+
+        self.app_data = DataStorage()
 
         #Main view
         canvas = tk.Canvas(main_view)
@@ -52,6 +55,11 @@ class tkinkerUI(tk.Tk):
         # On Windows and Mac, event.delta is multiples of 120
         self.scrollable_frame.update_idletasks()  # Make sure layout updated
         self.scrollable_frame.master.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    def regrid_rows(self):
+        for i, row_widgets in enumerate(self.rows, start=1):
+            for i in self.app_data.get_instruments_on_title:
+                pass
 
     def dummy(self):
         mb.showinfo("message","message")
