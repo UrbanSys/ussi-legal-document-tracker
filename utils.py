@@ -1,14 +1,18 @@
 import re
 
-
 class FileReadError(Exception):
     """Custom exception for file read errors."""
     pass
 
 """
+Processes a PDF of the title cert to extract information out if it
+currently extracts the legal description and instruments on title
 pdf_reader: PDF Reader currently open with a document to proces
+returns: Dictionary with the legal description and instruments on title 
 """
 def process_title_cert(pdf_reader):
+    ret_dict = []
+
     pages = pdf_reader.pages
     # Strip out page numbers/headers etc. for easier processing
     stripped_document = ""
@@ -51,8 +55,7 @@ def process_title_cert(pdf_reader):
         for i in range(legal_desc_start_index,legal_desc_end_index+1):
             legal_desc_text = legal_desc_text + text[i] + "\n"
         #mb.showinfo("legal description",legal_desc_text)
-        print(legal_desc_text)
-        ##TODO: PUT THIS IN A DESCRIPTION TO RETURN
+        ret_dict["legal_desc"]=legal_desc_text
     else:
         raise FileReadError("Unable to locate legal description in text! (Searching between %i and %i)"%(legal_desc_start_index,legal_desc_end_index))
 
@@ -113,8 +116,6 @@ def process_title_cert(pdf_reader):
 
             inst_on_title.append(new_inst)
 
-            print(new_inst)
-
         if has_rn and has_date:
             #This line is the beginning of an instrument
             inst_date = result_date.group()
@@ -130,11 +131,44 @@ def process_title_cert(pdf_reader):
     # Count the # of instruments
     m_inst_count = re.compile(r'[\d]{3}')
 
+    ret_dict["inst_on_title"]=inst_on_title
+
     for idx, i in enumerate(text):
         if "TOTAL INSTRUMENTS:" in i:
             result_inst_count = m_inst_count.search(i)
             if result_inst_count:
                 inst_count_in_title = int(result_inst_count.group())
-                print("Load Title File","%i of %i instruments on title have been successfully discovered!"%(len(self.inst_on_title),inst_count_in_title))
+                #print("Load Title File","%i of %i instruments on title have been successfully discovered!"%(len(inst_on_title),inst_count_in_title))
+                ret_dict["inst_count_in_title"] = inst_count_in_title
+                ret_dict["inst_count"] = len(inst_on_title)
             else: 
                 raise FileReadError("Cannot decipher the number of instruments listed on the TOTAL INSTRUMENTS: line")
+    return ret_dict
+
+"""
+Seperates the project number string into an array with 3 elements, being the client, project, and phase
+projectnumber: String with the project number
+returns: Array with properly formatted parts of a project number
+"""    
+def process_project_string(projectnumber):
+        #TODO: Raise exception if value is incorrect
+		project_parts = projectnumber.split(".")
+		if len(project_parts) !=3:
+			return None
+		if len(project_parts[0])>6:
+			return None
+		else:
+			project_parts[0] = project_parts[0].zfill(6)
+
+		if len(project_parts[1])>4:
+			return None
+		else:
+			project_parts[1] = project_parts[1].zfill(4)
+
+		if len(project_parts[2])>2:
+			return None
+		else:
+			project_parts[2] = project_parts[2].zfill(2)
+
+		#print("%s.%s.%s"%(project_parts[0],project_parts[1],project_parts[2]))
+		return project_parts
