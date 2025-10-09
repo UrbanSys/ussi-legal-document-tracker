@@ -1,3 +1,9 @@
+"""
+utils.py
+Gavin Schultz 2025
+Contains various methods to process data, including title docs, instruments, and data types
+"""
+
 import re
 
 class FileReadError(Exception):

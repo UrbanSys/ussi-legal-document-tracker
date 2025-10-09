@@ -1,3 +1,9 @@
+"""
+templateGen.py
+Gavin Schultz 2025
+Generates legal documents with information based off of a given template.
+"""
+
 import docx
 
 """
