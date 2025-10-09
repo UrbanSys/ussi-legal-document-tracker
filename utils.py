@@ -4,6 +4,10 @@ class FileReadError(Exception):
     """Custom exception for file read errors."""
     pass
 
+class ProjectStringError(Exception):
+    """Custom exception for file read errors."""
+    pass
+
 """
 Processes a PDF of the title cert to extract information out if it
 currently extracts the legal description and instruments on title
@@ -146,29 +150,28 @@ def process_title_cert(pdf_reader):
     return ret_dict
 
 """
-Seperates the project number string into an array with 3 elements, being the client, project, and phase
+Seperates the project number string into a tuple with 3 elements, being the client, project, and phase
 projectnumber: String with the project number
-returns: Array with properly formatted parts of a project number
+returns: Tuple with properly formatted parts of a project number
 """    
 def process_project_string(projectnumber):
-        #TODO: Raise exception if value is incorrect
 		project_parts = projectnumber.split(".")
 		if len(project_parts) !=3:
-			return None
+			raise ProjectStringError()
 		if len(project_parts[0])>6:
-			return None
+			raise ProjectStringError()
 		else:
 			project_parts[0] = project_parts[0].zfill(6)
 
 		if len(project_parts[1])>4:
-			return None
+			raise ProjectStringError()
 		else:
 			project_parts[1] = project_parts[1].zfill(4)
 
 		if len(project_parts[2])>2:
-			return None
+			raise ProjectStringError()
 		else:
 			project_parts[2] = project_parts[2].zfill(2)
 
 		#print("%s.%s.%s"%(project_parts[0],project_parts[1],project_parts[2]))
-		return project_parts
+		return (project_parts[1],project_parts[2],project_parts[3])
