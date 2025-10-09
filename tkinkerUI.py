@@ -6,7 +6,12 @@ A prototype of the UI in tkinker
 import tkinter as tk
 from tkinter import messagebox as mb
 
-__VERSION_TEXT__="Prototype 2 (in development)"
+try:
+    import genVersionNumber
+    genVersionNumber.gen_version_info()
+    from version_info import __VERSION_TEXT__
+except ImportError:
+    __VERSION_TEXT__ = "***version info unavalible***"
 
 class tkinkerUI(tk.Tk):
     def __init__(self):
