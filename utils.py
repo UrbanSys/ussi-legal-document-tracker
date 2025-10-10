@@ -46,7 +46,7 @@ def process_title_cert(pdf_reader):
             if should_include_line:
                 formatted_page = formatted_page + i + "\n"
         stripped_document = stripped_document + formatted_page
-    print(stripped_document)
+    #print(stripped_document)
     
     # Identify important parts of the document
     # Legal Description
