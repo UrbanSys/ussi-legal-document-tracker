@@ -5,7 +5,7 @@ A prototype of the UI in tkinker
 """
 import tkinter as tk
 from tkinter import messagebox as mb
-from data import DataStorage
+from actions import DocTrackerActions
 
 try:
     import genVersionNumber
@@ -27,7 +27,7 @@ class tkinkerUI(tk.Tk):
         self.title("USSI Document Tracker - %s"%build_text)
         self.geometry("1000x900")
 
-        self.app_data = DataStorage()
+        self.app = DocTrackerActions()
 
         #Main view
         canvas = tk.Canvas(main_view)
@@ -43,13 +43,22 @@ class tkinkerUI(tk.Tk):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        self.ui_insts_on_title = []
+
         for i in range(0,10):
             txt = tk.Label(self.scrollable_frame,text="test %i"%i)
-            txt.grid(row=i, column=1)
+            input = tk.Entry(self.scrollable_frame)
+
+            row = {}
+            row["txt"]=txt
+            row["input"]=input
+            self.ui_insts_on_title.append(row)
 
         #Bottom bar
         button = tk.Button(bottom_view,text="Button",command=self.dummy)
         button.grid(row=0, column=0)
+
+        self.regrid_rows()
 
     def _on_mousewheel(self, event):
         # On Windows and Mac, event.delta is multiples of 120
@@ -57,9 +66,11 @@ class tkinkerUI(tk.Tk):
         self.scrollable_frame.master.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def regrid_rows(self):
-        for i, row_widgets in enumerate(self.rows, start=1):
-            for i in self.app_data.get_instruments_on_title:
-                pass
+        for i, row_widgets in enumerate(self.ui_insts_on_title, start=1):
+            #for i in self.app_data.get_instruments_on_title:
+            #    pass
+            row_widgets["txt"].grid(row=i, column=1)
+            row_widgets["input"].grid(row=i, column=2)
 
     def dummy(self):
         mb.showinfo("message","message")
