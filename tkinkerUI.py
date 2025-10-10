@@ -4,6 +4,7 @@ Gavin Schultz 2025
 A prototype of the UI in tkinker
 """
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
 from tkinter import filedialog as fd
@@ -113,16 +114,22 @@ class tkinkerUI(tk.Tk):
                 row["Document #"]=tk.Entry(self.scrollable_frame)
                 row["Document #"].insert(0, inst["reg_number"])
                 row["Description"]=tk.Entry(self.scrollable_frame)
-                row["Description"].insert(0, inst["description"])
                 row["Signatories"]=tk.Entry(self.scrollable_frame)
                 row["Signatories"].insert(0, inst["signatories"])
-                row["Action"]=tk.Entry(self.scrollable_frame)
                 row["Circulation Notes"]=tk.Entry(self.scrollable_frame)
-                row["Status"]=tk.Entry(self.scrollable_frame)
+                self.generate_dropdown("Action",self.app.get_document_tracking_actions(),row)
+                self.generate_dropdown("Status",self.app.get_document_tracking_statuses(),row)
+                
                 self.ui_insts_on_title.append(row)
             
             mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
             self.regrid_rows()
+
+    def generate_dropdown(self,name,items,location,default=0):
+        location["%s_Val"%name]=tk.StringVar()
+        location[name]=ttk.Combobox(self.scrollable_frame,textvariable=location["%s_Val"%name], state="readonly") 
+        location[name]['values']=items
+        location[name].set(items[0])
 
 if __name__ == "__main__":
     app = tkinkerUI()

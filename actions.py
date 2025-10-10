@@ -15,6 +15,12 @@ class DocTrackerActions():
 
     def get_existing_inst_col_order(self):
         return ["Item","Document #", "Description","Signatories","Action","Circulation Notes","Status"]
+    
+    def get_document_tracking_statuses(self):
+        return ["---","Prepared","Complete","No Action Required","Client for Execution","City for Execution","Third party for Execution"]
+
+    def get_document_tracking_actions(self):
+        return ["No Action Required","Consent","Partial Discharge","Full Discharge"]
 
     def get_instruments_on_title(self):
         return self.data.get_instruments_on_title()
