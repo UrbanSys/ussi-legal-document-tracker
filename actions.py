@@ -12,16 +12,18 @@ from pypdf import PdfReader
 class DocTrackerActions():
     def __init__(self):
         self.data = DataStorage()
-        self.insts_loaded = -1
+
+    def get_existing_inst_col_order(self):
+        return ["Item","Document #", "Description","Signatories","Action","Circulation Notes","Status"]
 
     def get_instruments_on_title(self):
         return self.data.get_instruments_on_title()
     
     def get_loaded_insts_on_title(self):
-        return self.insts_loaded
+        return self.data.get_loaded_insts_on_title()
     
     def load_instruments_on_title(self,filepath):
         reader = PdfReader(filepath)
         processed_title_cert = process_title_cert(reader)
         self.data.set_instruments_on_title(processed_title_cert["inst_on_title"])
-        self.insts_loaded = processed_title_cert["inst_count_in_title"]
+        self.data.set_loaded_insts_on_title(processed_title_cert["inst_count_in_title"])

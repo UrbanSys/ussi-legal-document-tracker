@@ -26,7 +26,7 @@ class tkinkerUI(tk.Tk):
 
         build_text = __VERSION_TEXT__
         self.title("USSI Document Tracker - %s"%build_text)
-        self.geometry("1000x900")
+        self.geometry("1000x600")
 
         self.app = DocTrackerActions()
 
@@ -44,15 +44,22 @@ class tkinkerUI(tk.Tk):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        #Insts on title
+        self.ui_insts_on_title_header = []
         self.ui_insts_on_title = []
+
+        row_labels = self.app.get_existing_inst_col_order()
+        for col in row_labels:
+            txt = tk.Label(self.scrollable_frame,text=col)
+            self.ui_insts_on_title_header.append(txt)
 
         for i in range(0,10):
             txt = tk.Label(self.scrollable_frame,text="test %i"%i)
             input = tk.Entry(self.scrollable_frame)
 
             row = {}
-            row["txt"]=txt
-            row["input"]=input
+            row[row_labels[0]]=txt
+            row[row_labels[1]]=input
             self.ui_insts_on_title.append(row)
 
         #Bottom bar
@@ -69,11 +76,12 @@ class tkinkerUI(tk.Tk):
         self.scrollable_frame.master.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def regrid_rows(self):
+        for i, col_widgets in enumerate(self.ui_insts_on_title_header, start=1):
+            col_widgets.grid(row=0, column=i)
         for i, row_widgets in enumerate(self.ui_insts_on_title, start=1):
-            #for i in self.app_data.get_instruments_on_title:
-            #    pass
-            row_widgets["txt"].grid(row=i, column=1)
-            row_widgets["input"].grid(row=i, column=2)
+            for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
+                if col in row_widgets:
+                    row_widgets[col].grid(row=i, column=j)
 
     def dummy(self):
         mb.showinfo("message","message")
@@ -85,13 +93,32 @@ class tkinkerUI(tk.Tk):
         )
         if filepath:
             self.app.load_instruments_on_title(filepath)
+            for row in self.ui_insts_on_title:
+                for widget in row:
+                    row[widget].destroy()
             self.ui_insts_on_title = []
             insts_on_title = self.app.get_instruments_on_title()
-            for i in insts_on_title:
+            row_labels = self.app.get_existing_inst_col_order()
+            for i, inst in enumerate(insts_on_title,start=1):
+                """
+                new_inst["date"] = inst_date
+                new_inst["reg_number"] = inst_rn
+                new_inst["name"] = inst_name
+                new_inst["description"] = inst_text
+                new_inst["signatories"] = sign_text
+                new_inst["temp_selection"] = 4
+                """
                 row = {}
-                text = i["name"]
-                row["txt"]=tk.Label(self.scrollable_frame,text="inst: %s"%text)
-                row["input"]=tk.Entry(self.scrollable_frame)
+                row["Item"]=tk.Label(self.scrollable_frame,text="%i"%i)
+                row["Document #"]=tk.Entry(self.scrollable_frame)
+                row["Document #"].insert(0, inst["reg_number"])
+                row["Description"]=tk.Entry(self.scrollable_frame)
+                row["Description"].insert(0, inst["description"])
+                row["Signatories"]=tk.Entry(self.scrollable_frame)
+                row["Signatories"].insert(0, inst["signatories"])
+                row["Action"]=tk.Entry(self.scrollable_frame)
+                row["Circulation Notes"]=tk.Entry(self.scrollable_frame)
+                row["Status"]=tk.Entry(self.scrollable_frame)
                 self.ui_insts_on_title.append(row)
             
             mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
