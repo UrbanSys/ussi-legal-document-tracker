@@ -12,3 +12,6 @@ class DataStorage():
     def get_instruments_on_title(self):
         return self.instruments_on_title
     
+    def set_instruments_on_title(self,array):
+        self.instruments_on_title = array
+    

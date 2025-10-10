@@ -6,6 +6,7 @@ A prototype of the UI in tkinker
 import tkinter as tk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
+from tkinter import filedialog as fd
 
 try:
     import genVersionNumber
@@ -55,8 +56,10 @@ class tkinkerUI(tk.Tk):
             self.ui_insts_on_title.append(row)
 
         #Bottom bar
-        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button = tk.Button(bottom_view,text="Import Title",command=self.load_instruments_on_title)
         button.grid(row=0, column=0)
+        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button.grid(row=0, column=1)
 
         self.regrid_rows()
 
@@ -74,6 +77,25 @@ class tkinkerUI(tk.Tk):
 
     def dummy(self):
         mb.showinfo("message","message")
+
+    def load_instruments_on_title(self):
+        filepath = fd.askopenfilename(
+            title="Open File",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")]
+        )
+        if filepath:
+            self.app.load_instruments_on_title(filepath)
+            self.ui_insts_on_title = []
+            insts_on_title = self.app.get_instruments_on_title()
+            for i in insts_on_title:
+                row = {}
+                text = i["name"]
+                row["txt"]=tk.Label(self.scrollable_frame,text="inst: %s"%text)
+                row["input"]=tk.Entry(self.scrollable_frame)
+                self.ui_insts_on_title.append(row)
+            
+            mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
+            self.regrid_rows()
 
 if __name__ == "__main__":
     app = tkinkerUI()

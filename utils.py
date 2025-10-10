@@ -21,7 +21,7 @@ pdf_reader: PDF Reader currently open with a document to proces
 returns: Dictionary with the legal description and instruments on title 
 """
 def process_title_cert(pdf_reader):
-    ret_dict = []
+    ret_dict = {}
 
     pages = pdf_reader.pages
     # Strip out page numbers/headers etc. for easier processing
