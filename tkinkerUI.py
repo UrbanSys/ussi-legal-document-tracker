@@ -55,13 +55,20 @@ class tkinkerUI(tk.Tk):
             self.ui_insts_on_title_header.append(txt)
 
         for i in range(0,10):
-            txt = tk.Label(self.scrollable_frame,text="test %i"%i)
-            input = tk.Entry(self.scrollable_frame)
+            self.add_row_ex_enc()
 
-            row = {}
-            row[row_labels[0]]=txt
-            row[row_labels[1]]=input
-            self.ui_insts_on_title.append(row)
+        #New Agreements
+        self.ui_new_agreements_header = []
+        self.ui_new_agreements = []
+
+        row_labels = self.app.get_new_agreements_col_order()
+
+        for col in row_labels:
+            txt = tk.Label(self.scrollable_frame,text=col)
+            self.ui_new_agreements_header.append(txt)
+
+        for i in range(0,10):
+            self.add_row_new_agreement()
 
         #Bottom bar
         button = tk.Button(bottom_view,text="Import Title",command=self.load_instruments_on_title)
@@ -81,12 +88,25 @@ class tkinkerUI(tk.Tk):
         return "break"
 
     def regrid_rows(self):
+        rid = 0
         for i, col_widgets in enumerate(self.ui_insts_on_title_header, start=1):
-            col_widgets.grid(row=0, column=i)
-        for i, row_widgets in enumerate(self.ui_insts_on_title, start=1):
+            col_widgets.grid(row=rid, column=i)
+        rid+=1
+        for i, row_widgets in enumerate(self.ui_insts_on_title, start=rid):
             for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
                 if col in row_widgets:
                     row_widgets[col].grid(row=i, column=j)
+            rid  +=1
+
+        for i, col_widgets in enumerate(self.ui_new_agreements_header, start=1):
+            col_widgets.grid(row=rid, column=i)
+        rid+=1
+        for i, row_widgets in enumerate(self.ui_new_agreements, start=rid):
+            for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
+                if col in row_widgets:
+                    row_widgets[col].grid(row=i, column=j)
+            rid  +=1
+
 
     def dummy(self):
         mb.showinfo("message","message")
@@ -100,34 +120,57 @@ class tkinkerUI(tk.Tk):
             self.app.load_instruments_on_title(filepath)
             for row in self.ui_insts_on_title:
                 for widget in row:
-                    row[widget].destroy()
+                    try:
+                        row[widget].destroy()
+                    except:
+                        row[widget] = None
             self.ui_insts_on_title = []
             insts_on_title = self.app.get_instruments_on_title()
             row_labels = self.app.get_existing_inst_col_order()
             for i, inst in enumerate(insts_on_title,start=1):
-                """
-                new_inst["date"] = inst_date
-                new_inst["reg_number"] = inst_rn
-                new_inst["name"] = inst_name
-                new_inst["description"] = inst_text
-                new_inst["signatories"] = sign_text
-                new_inst["temp_selection"] = 4
-                """
-                row = {}
-                row["Item"]=tk.Label(self.scrollable_frame,text="%i"%i)
-                row["Document #"]=tk.Entry(self.scrollable_frame)
-                row["Document #"].insert(0, inst["reg_number"])
-                row["Description"]=tk.Entry(self.scrollable_frame)
-                row["Signatories"]=tk.Entry(self.scrollable_frame)
-                row["Signatories"].insert(0, inst["signatories"])
-                row["Circulation Notes"]=tk.Entry(self.scrollable_frame)
-                self.generate_dropdown("Action",self.app.get_document_tracking_actions(),row)
-                self.generate_dropdown("Status",self.app.get_document_tracking_statuses(),row)
-                
-                self.ui_insts_on_title.append(row)
+                self.add_row_ex_enc(inst["reg_number"],inst["signatories"])
             
             mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
             self.regrid_rows()
+
+    def add_row_ex_enc(self,reg_number="",signatories=""):
+        """
+        new_inst["date"] = inst_date
+        new_inst["reg_number"] = inst_rn
+        new_inst["name"] = inst_name
+        new_inst["description"] = inst_text
+        new_inst["signatories"] = sign_text
+        new_inst["temp_selection"] = 4
+        """
+        row = {}
+        row["Item"]=tk.Label(self.scrollable_frame,text="%i"%(len(self.ui_insts_on_title)+1))
+        row["Document #"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Document #"].insert(0, reg_number)
+        row["Description"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Signatories"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Signatories"].insert(0, signatories)
+        row["Circulation Notes"]=tk.Entry(self.scrollable_frame,width=25)
+        self.generate_dropdown("Action",self.app.get_document_tracking_actions(),row)
+        self.generate_dropdown("Status",self.app.get_document_tracking_statuses(),row)
+        
+        self.ui_insts_on_title.append(row)
+
+    def add_row_new_agreement(self):
+        """
+        return ["Item","Document/Desc", "Copies/Dept","Signatories","Condition of Approval","Circulation Notes","Status"]
+        """
+        row = {}
+        row["Item"]=tk.Label(self.scrollable_frame,text="%i"%(len(self.ui_new_agreements)+1))
+        row["Document/Desc"]=tk.Entry(self.scrollable_frame,width=25)
+        #row["Document #"].insert(0, reg_number)
+        row["Copies/Dept"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Signatories"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Condition of Approval"]=tk.Entry(self.scrollable_frame,width=25)
+        #row["Signatories"].insert(0, signatories)
+        row["Circulation Notes"]=tk.Entry(self.scrollable_frame,width=25)
+        self.generate_dropdown("Status",self.app.get_document_tracking_statuses(),row)
+        
+        self.ui_new_agreements.append(row)
 
     def generate_dropdown(self,name,items,location,default=0):
         location["%s_Val"%name]=tk.StringVar()

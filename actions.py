@@ -16,6 +16,9 @@ class DocTrackerActions():
     def get_existing_inst_col_order(self):
         return ["Item","Document #", "Description","Signatories","Action","Circulation Notes","Status"]
     
+    def get_new_agreements_col_order(self):
+        return ["Item","Document/Desc", "Copies/Dept","Signatories","Condition of Approval","Circulation Notes","Status"]
+    
     def get_document_tracking_statuses(self):
         return ["---","Prepared","Complete","No Action Required","Client for Execution","City for Execution","Third party for Execution"]
 
