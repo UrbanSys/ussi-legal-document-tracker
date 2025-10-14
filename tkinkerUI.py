@@ -70,6 +70,14 @@ class tkinkerUI(tk.Tk):
         for i in range(0,10):
             self.add_row_new_agreement()
 
+        #Plans
+        self.ui_new_plans_header = {}
+        self.ui_new_plans = {}
+
+        self.add_new_plan("SUB1")
+        self.add_new_plan("URW1")
+        self.add_new_plan("ODRW1")
+
         #Bottom bar
         button = tk.Button(bottom_view,text="Import Title",command=self.load_instruments_on_title)
         button.grid(row=0, column=0)
@@ -98,6 +106,16 @@ class tkinkerUI(tk.Tk):
                     row_widgets[col].grid(row=i, column=j)
             rid  +=1
 
+        for plan_key in self.ui_new_plans:
+            for i, col_widgets in enumerate(self.ui_new_plans_header[plan_key], start=1):
+                col_widgets.grid(row=rid, column=i)
+            rid+=1
+            for i, row_widgets in enumerate(self.ui_new_plans[plan_key], start=rid):
+                for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
+                    if col in row_widgets:
+                        row_widgets[col].grid(row=i, column=j)
+                rid  +=1
+
         for i, col_widgets in enumerate(self.ui_new_agreements_header, start=1):
             col_widgets.grid(row=rid, column=i)
         rid+=1
@@ -106,6 +124,7 @@ class tkinkerUI(tk.Tk):
                 if col in row_widgets:
                     row_widgets[col].grid(row=i, column=j)
             rid  +=1
+
 
 
     def dummy(self):
@@ -132,6 +151,43 @@ class tkinkerUI(tk.Tk):
             
             mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
             self.regrid_rows()
+
+    def add_new_plan(self,plan_name):
+        """
+        return ["Item","Document/Desc", "Copies/Dept","Signatories","Condition of Approval","Circulation Notes","Status"]
+        """
+        row_labels = self.app.get_new_agreements_col_order()
+        plan_docs = []
+        plan_docs_headers = []
+        for col in row_labels:
+            txt = tk.Label(self.scrollable_frame,text=col)
+            plan_docs_headers.append(txt)
+
+        
+        self.add_row_plan(plan_docs,"Surveyor's Affidavit")
+        self.add_row_plan(plan_docs,"Consent")
+        self.add_row_plan(plan_docs)
+
+        self.ui_new_plans[plan_name] = plan_docs
+        self.ui_new_plans_header[plan_name] = plan_docs_headers
+
+
+    def add_row_plan(self,plan,doc_desc=""):
+        """
+        return ["Item","Document/Desc", "Copies/Dept","Signatories","Condition of Approval","Circulation Notes","Status"]
+        """
+        row = {}
+        row["Item"]=tk.Label(self.scrollable_frame,text="%i"%(len(self.ui_new_agreements)+1))
+        row["Document/Desc"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Document/Desc"].insert(0, doc_desc)
+        row["Copies/Dept"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Signatories"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Condition of Approval"]=tk.Entry(self.scrollable_frame,width=25)
+        #row["Signatories"].insert(0, signatories)
+        row["Circulation Notes"]=tk.Entry(self.scrollable_frame,width=25)
+        self.generate_dropdown("Status",self.app.get_document_tracking_statuses(),row)
+        
+        plan.append(row)
 
     def add_row_ex_enc(self,reg_number="",signatories=""):
         """
