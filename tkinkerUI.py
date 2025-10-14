@@ -21,7 +21,7 @@ __FILE_VERSION__ = 1
 __FILE_MIN_VERSION__ = 1
 __PROGRAM_NAME__ = "USSI DOCUMENT TRACKER PROTOTYPE 2"
 
-class tkinkerUI(tk.Tk):
+class tkinterUI(tk.Tk):
     def __init__(self):
         super().__init__()
 
@@ -436,5 +436,5 @@ class tkinkerUI(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = tkinkerUI()
+    app = tkinterUI()
     app.mainloop()
