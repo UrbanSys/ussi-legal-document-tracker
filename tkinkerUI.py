@@ -158,8 +158,8 @@ class tkinkerUI(tk.Tk):
             for i, inst in enumerate(insts_on_title,start=1):
                 self.add_row_ex_enc(inst["reg_number"],inst["name"],inst["signatories"])
             
-            mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
             self.regrid_rows()
+            mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
 
     def add_new_plan(self,plan_name):
         """
@@ -245,6 +245,54 @@ class tkinkerUI(tk.Tk):
         location[name].bind("<MouseWheel>", self._dont_scroll)
         location[name]['values']=items
         location[name].set(items[0])
+
+    def get_ui_state(self):
+        ui_state = {
+            "existing_encumbrances_on_title": [],
+            "new_agreements": [],
+            "plans": {}
+        }
+
+        # Get Existing Encumbrances
+        for row in self.ui_insts_on_title:
+            data = {}
+            for col in self.app.get_existing_inst_col_order():
+                if col == "Item":
+                    continue
+                elif col in row:
+                    data[col] = row[col].get()
+                elif f"{col}_Val" in row:  # For dropdowns
+                    data[col] = row[f"{col}_Val"].get()
+            ui_state["existing_encumbrances_on_title"].append(data)
+
+        # Get New Agreements
+        for row in self.ui_new_agreements:
+            data = {}
+            for col in self.app.get_new_agreements_col_order():
+                if col == "Item":
+                    continue
+                elif col in row:
+                    data[col] = row[col].get()
+                elif f"{col}_Val" in row:  # For dropdowns
+                    data[col] = row[f"{col}_Val"].get()
+            ui_state["new_agreements"].append(data)
+
+        # Get Plans
+        for plan_key, rows in self.ui_new_plans.items():
+            ui_state["plans"][plan_key] = []
+            for row in rows:
+                data = {}
+                for col in self.app.get_new_agreements_col_order():
+                    if col == "Item":
+                        continue
+                    elif col in row:
+                        data[col] = row[col].get()
+                    elif f"{col}_Val" in row:  # For dropdowns
+                        data[col] = row[f"{col}_Val"].get()
+                ui_state["plans"][plan_key].append(data)
+
+        return ui_state
+
 
 if __name__ == "__main__":
     app = tkinkerUI()
