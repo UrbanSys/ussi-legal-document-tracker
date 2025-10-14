@@ -148,10 +148,8 @@ class tkinkerUI(tk.Tk):
             self.app.load_instruments_on_title(filepath)
             for row in self.ui_insts_on_title:
                 for widget in row:
-                    try:
+                    if hasattr(widget, "destroy"):
                         row[widget].destroy()
-                    except:
-                        row[widget] = None
             self.ui_insts_on_title = []
             insts_on_title = self.app.get_instruments_on_title()
             row_labels = self.app.get_existing_inst_col_order()
