@@ -5,7 +5,6 @@ A prototype of the UI in tkinker
 """
 import json
 import tkinter as tk
-import copy
 from tkinter import ttk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
@@ -18,6 +17,10 @@ try:
 except ImportError:
     __VERSION_TEXT__ = "***version info unavalible***"
 
+__FILE_VERSION__ = 1
+__FILE_MIN_VERSION__ = 1
+__PROGRAM_NAME__ = "USSI DOCUMENT TRACKER PROTOTYPE 2"
+
 class tkinkerUI(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -28,7 +31,7 @@ class tkinkerUI(tk.Tk):
         bottom_view.pack(side="bottom")
 
         build_text = __VERSION_TEXT__
-        self.title("USSI Document Tracker - %s"%build_text)
+        self.title("%s - %s"%(__PROGRAM_NAME__,build_text))
         self.geometry("1000x600")
 
         self.app = DocTrackerActions()
@@ -179,6 +182,24 @@ class tkinkerUI(tk.Tk):
             except Exception as e:
                 mb.showerror("Unable to open file", f"There was an error reading the file {file_path}.\nError: {e}")
                 return
+            
+            try:
+                header = data["header"]
+                file_version = header["file_version"]
+                program_name = header["program_name"]
+                program_version = header["program_version"]
+                if program_name==__PROGRAM_NAME__:
+                    if file_version >= __FILE_MIN_VERSION__ and file_version <= __FILE_VERSION__:
+                        print("Header is correct, loading file as normal")
+                    else:
+                        mb.showerror("Unable to open file", f"There was an error reading the file {file_path}.\nInvalid version number! File is {file_version}, should be between {__FILE_MIN_VERSION__}, {__FILE_VERSION__}\nPlease track down a compatible version of this program, such as \n{program_version}")
+                        return
+                else: 
+                    mb.showerror("Unable to open file", f"There was an error reading the file {file_path}.\nInvalid header: Not a USSI Document Tracker file!")
+                    return
+            except KeyError as e:
+                mb.showerror("Unable to open file", f"There was an error reading the file {file_path}.\nInvalid file: Not a USSI Document Tracker file!")
+                return
 
             self.app.set_app_state(data)
             self.load_ui_state(self.app.get_app_state())
@@ -194,9 +215,8 @@ class tkinkerUI(tk.Tk):
 
         if file_path:
             self.app.set_app_state(self.get_ui_state())
-            save_data = copy.deepcopy(self.app.get_app_state())
             with open(file_path, 'w') as f:
-                json.dump(save_data, f, indent=4)
+                json.dump(self.app.get_app_state(), f, indent=4)
             print(f"Data saved to {file_path}")
 
     def add_new_plan(self,plan_name):
@@ -289,6 +309,13 @@ class tkinkerUI(tk.Tk):
             "existing_encumbrances_on_title": [],
             "new_agreements": [],
             "plans": {}
+        }
+
+        # Header
+        ui_state["header"] = {
+            "program_name": __PROGRAM_NAME__,
+            "program_version" : __VERSION_TEXT__,
+            "file_version" : __FILE_VERSION__,
         }
 
         # Get Existing Encumbrances
