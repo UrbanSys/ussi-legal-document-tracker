@@ -48,6 +48,7 @@ class tkinkerUI(tk.Tk):
         #Insts on title
         self.ui_insts_on_title_header = []
         self.ui_insts_on_title = []
+        self.ui_insts_on_title_label = tk.Label(self.scrollable_frame,text="EXISTING ENCUMBRANCES ON TITLE", font=("Arial", 10, "bold"))
 
         row_labels = self.app.get_existing_inst_col_order()
         for col in row_labels:
@@ -60,6 +61,7 @@ class tkinkerUI(tk.Tk):
         #New Agreements
         self.ui_new_agreements_header = []
         self.ui_new_agreements = []
+        self.ui_new_agreements_label = tk.Label(self.scrollable_frame,text="NEW AGREEMENTS CONCURRENT WITH REGISTRATION", font=("Arial", 10, "bold"))
 
         row_labels = self.app.get_new_agreements_col_order()
 
@@ -73,6 +75,7 @@ class tkinkerUI(tk.Tk):
         #Plans
         self.ui_new_plans_header = {}
         self.ui_new_plans = {}
+        self.ui_new_plans_label = {}
 
         self.add_new_plan("SUB1")
         self.add_new_plan("URW1")
@@ -97,6 +100,8 @@ class tkinkerUI(tk.Tk):
 
     def regrid_rows(self):
         rid = 0
+        self.ui_insts_on_title_label.grid(row=rid, column=0, columnspan=5, sticky="w")
+        rid+=1
         for i, col_widgets in enumerate(self.ui_insts_on_title_header, start=1):
             col_widgets.grid(row=rid, column=i)
         rid+=1
@@ -107,6 +112,8 @@ class tkinkerUI(tk.Tk):
             rid  +=1
 
         for plan_key in self.ui_new_plans:
+            self.ui_new_plans_label[plan_key].grid(row=rid, column=0, columnspan=5, sticky="w")
+            rid+=1
             for i, col_widgets in enumerate(self.ui_new_plans_header[plan_key], start=1):
                 col_widgets.grid(row=rid, column=i)
             rid+=1
@@ -116,6 +123,8 @@ class tkinkerUI(tk.Tk):
                         row_widgets[col].grid(row=i, column=j)
                 rid  +=1
 
+        self.ui_new_agreements_label.grid(row=rid, column=0, columnspan=5, sticky="w")
+        rid+=1
         for i, col_widgets in enumerate(self.ui_new_agreements_header, start=1):
             col_widgets.grid(row=rid, column=i)
         rid+=1
@@ -147,7 +156,7 @@ class tkinkerUI(tk.Tk):
             insts_on_title = self.app.get_instruments_on_title()
             row_labels = self.app.get_existing_inst_col_order()
             for i, inst in enumerate(insts_on_title,start=1):
-                self.add_row_ex_enc(inst["reg_number"],inst["signatories"])
+                self.add_row_ex_enc(inst["reg_number"],inst["name"],inst["signatories"])
             
             mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
             self.regrid_rows()
@@ -163,7 +172,8 @@ class tkinkerUI(tk.Tk):
             txt = tk.Label(self.scrollable_frame,text=col)
             plan_docs_headers.append(txt)
 
-        
+        self.ui_new_plans_label[plan_name] = tk.Label(self.scrollable_frame,text="PLAN - %s"%plan_name, font=("Arial", 10, "bold"))
+
         self.add_row_plan(plan_docs,"Surveyor's Affidavit")
         self.add_row_plan(plan_docs,"Consent")
         self.add_row_plan(plan_docs)
@@ -189,7 +199,7 @@ class tkinkerUI(tk.Tk):
         
         plan.append(row)
 
-    def add_row_ex_enc(self,reg_number="",signatories=""):
+    def add_row_ex_enc(self,reg_number="",reg_name="",signatories=""):
         """
         new_inst["date"] = inst_date
         new_inst["reg_number"] = inst_rn
@@ -203,6 +213,7 @@ class tkinkerUI(tk.Tk):
         row["Document #"]=tk.Entry(self.scrollable_frame,width=25)
         row["Document #"].insert(0, reg_number)
         row["Description"]=tk.Entry(self.scrollable_frame,width=25)
+        row["Description"].insert(0, reg_name)
         row["Signatories"]=tk.Entry(self.scrollable_frame,width=25)
         row["Signatories"].insert(0, signatories)
         row["Circulation Notes"]=tk.Entry(self.scrollable_frame,width=25)
