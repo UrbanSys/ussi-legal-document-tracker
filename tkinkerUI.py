@@ -76,6 +76,10 @@ class tkinkerUI(tk.Tk):
         self.scrollable_frame.update_idletasks()  # Make sure layout updated
         self.scrollable_frame.master.yview_scroll(int(-1*(event.delta/120)), "units")
 
+    def _dont_scroll(self,event):
+        self._on_mousewheel(event)
+        return "break"
+
     def regrid_rows(self):
         for i, col_widgets in enumerate(self.ui_insts_on_title_header, start=1):
             col_widgets.grid(row=0, column=i)
@@ -128,6 +132,7 @@ class tkinkerUI(tk.Tk):
     def generate_dropdown(self,name,items,location,default=0):
         location["%s_Val"%name]=tk.StringVar()
         location[name]=ttk.Combobox(self.scrollable_frame,textvariable=location["%s_Val"%name], state="readonly") 
+        location[name].bind("<MouseWheel>", self._dont_scroll)
         location[name]['values']=items
         location[name].set(items[0])
 
