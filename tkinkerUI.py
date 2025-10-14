@@ -3,7 +3,9 @@ tkinkerUI.py
 Gavin Schultz 2025
 A prototype of the UI in tkinker
 """
+import json
 import tkinter as tk
+import copy
 from tkinter import ttk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
@@ -84,8 +86,12 @@ class tkinkerUI(tk.Tk):
         #Bottom bar
         button = tk.Button(bottom_view,text="Import Title",command=self.load_instruments_on_title)
         button.grid(row=0, column=0)
-        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button = tk.Button(bottom_view,text="Save",command=self.save_tracker)
         button.grid(row=0, column=1)
+        button = tk.Button(bottom_view,text="Load",command=self.load_tracker)
+        button.grid(row=0, column=2)
+        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button.grid(row=0, column=3)
 
         self.regrid_rows()
 
@@ -133,7 +139,7 @@ class tkinkerUI(tk.Tk):
                 if col in row_widgets:
                     row_widgets[col].grid(row=i, column=j)
             rid  +=1
-
+        self.app.set_app_state(self.get_ui_state())
 
 
     def dummy(self):
@@ -147,9 +153,9 @@ class tkinkerUI(tk.Tk):
         if filepath:
             self.app.load_instruments_on_title(filepath)
             for row in self.ui_insts_on_title:
-                for widget in row:
+                for widget in row.values():
                     if hasattr(widget, "destroy"):
-                        row[widget].destroy()
+                        widget.destroy()
             self.ui_insts_on_title = []
             insts_on_title = self.app.get_instruments_on_title()
             row_labels = self.app.get_existing_inst_col_order()
@@ -157,7 +163,41 @@ class tkinkerUI(tk.Tk):
                 self.add_row_ex_enc(inst["reg_number"],inst["name"],inst["signatories"])
             
             self.regrid_rows()
-            mb.showinfo("Successfully imported title!","Inported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
+            mb.showinfo("Successfully imported title!","Imported %i of %i instruments"%(len(insts_on_title),self.app.get_loaded_insts_on_title()))
+
+    def load_tracker(self):
+        file_path = fd.askopenfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Open JSON File"
+        )
+
+        if file_path:
+            try:
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+            except Exception as e:
+                mb.showerror("Unable to open file", f"There was an error reading the file {file_path}.\nError: {e}")
+                return
+
+            self.app.set_app_state(data)
+            self.load_ui_state(self.app.get_app_state())
+            self.regrid_rows()
+            mb.showinfo("Successfully imported title!","Load Successful")
+
+    def save_tracker(self):
+        file_path = fd.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Save JSON File"
+        )
+
+        if file_path:
+            self.app.set_app_state(self.get_ui_state())
+            save_data = copy.deepcopy(self.app.get_app_state())
+            with open(file_path, 'w') as f:
+                json.dump(save_data, f, indent=4)
+            print(f"Data saved to {file_path}")
 
     def add_new_plan(self,plan_name):
         """
@@ -290,6 +330,82 @@ class tkinkerUI(tk.Tk):
                 ui_state["plans"][plan_key].append(data)
 
         return ui_state
+    
+    def load_ui_state(self, data):
+        # Clear existing encumbrances
+        for row in self.ui_insts_on_title:
+            for widget in row.values():
+                if hasattr(widget, "destroy"):
+                    widget.destroy()
+        self.ui_insts_on_title.clear()
+
+        # Clear new agreements
+        for row in self.ui_new_agreements:
+            for widget in row.values():
+                if hasattr(widget, "destroy"):
+                    widget.destroy()
+        self.ui_new_agreements.clear()
+
+        # Clear plans
+        for plan_rows in self.ui_new_plans.values():
+            for row in plan_rows:
+                for widget in row.values():
+                    if hasattr(widget, "destroy"):
+                        widget.destroy()
+        self.ui_new_plans.clear()
+        self.ui_new_plans_label.clear()
+        self.ui_new_plans_header.clear()
+
+        # Repopulate existing encumbrances
+        for enc in data.get("existing_encumbrances_on_title", []):
+            self.add_row_ex_enc(
+                reg_number=enc.get("Document #", ""),
+                reg_name=enc.get("Description", ""),
+                signatories=enc.get("Signatories", "")
+            )
+            # Set dropdowns after widget is created
+            row = self.ui_insts_on_title[-1]
+            if "Action_Val" in row:
+                row["Action_Val"].set(enc.get("Action", ""))
+            if "Status_Val" in row:
+                row["Status_Val"].set(enc.get("Status", ""))
+            if "Circulation Notes" in row:
+                row["Circulation Notes"].delete(0, tk.END)
+                row["Circulation Notes"].insert(0, enc.get("Circulation Notes", ""))
+
+        # Repopulate new agreements
+        for agreement in data.get("new_agreements", []):
+            self.add_row_new_agreement()
+            row = self.ui_new_agreements[-1]
+            for col in self.app.get_new_agreements_col_order():
+                if col == "Item":
+                    continue
+                elif col in row:
+                    row[col].delete(0, tk.END)
+                    row[col].insert(0, agreement.get(col, ""))
+                elif f"{col}_Val" in row:
+                    row[f"{col}_Val"].set(agreement.get(col, ""))
+
+        # Repopulate plans
+        for plan_name, plan_rows in data.get("plans", {}).items():
+            self.add_new_plan(plan_name)
+            for i, row_data in enumerate(plan_rows):
+                # If more rows are needed, add them
+                while i >= len(self.ui_new_plans[plan_name]):
+                    self.add_row_plan(self.ui_new_plans[plan_name])
+
+                row = self.ui_new_plans[plan_name][i]
+                for col in self.app.get_new_agreements_col_order():
+                    if col == "Item":
+                        continue
+                    elif col in row:
+                        row[col].delete(0, tk.END)
+                        row[col].insert(0, row_data.get(col, ""))
+                    elif f"{col}_Val" in row:
+                        row[f"{col}_Val"].set(row_data.get(col, ""))
+
+        self.regrid_rows()
+
 
 
 if __name__ == "__main__":

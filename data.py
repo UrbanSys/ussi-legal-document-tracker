@@ -9,6 +9,7 @@ class DataStorage():
     def __init__(self):
         self.instruments_on_title = []
         self.instrument_count_on_title = 0
+        self.app_state = {}
 
     def get_instruments_on_title(self):
         return self.instruments_on_title
@@ -21,3 +22,9 @@ class DataStorage():
     
     def set_loaded_insts_on_title(self,val):
         self.instrument_count_on_title = val
+
+    def get_app_state(self):
+        return self.app_state
+    
+    def set_app_state(self,data):
+        self.app_state = data

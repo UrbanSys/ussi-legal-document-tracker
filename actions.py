@@ -36,3 +36,9 @@ class DocTrackerActions():
         processed_title_cert = process_title_cert(reader)
         self.data.set_instruments_on_title(processed_title_cert["inst_on_title"])
         self.data.set_loaded_insts_on_title(processed_title_cert["inst_count_in_title"])
+
+    def get_app_state(self):
+        return self.data.get_app_state()
+    
+    def set_app_state(self,data):
+        self.data.set_app_state(data)
