@@ -108,16 +108,19 @@ class tkinterUI(tk.Tk):
         return "break"
 
     def regrid_rows(self):
+        for widget in self.scrollable_frame.winfo_children():
+            widget.grid_forget()
+
         rid = 0
         self.ui_insts_on_title_label.grid(row=rid, column=0, columnspan=5, sticky="w")
         rid+=1
         for i, col_widgets in enumerate(self.ui_insts_on_title_header, start=1):
             col_widgets.grid(row=rid, column=i)
         rid+=1
-        for i, row_widgets in enumerate(self.ui_insts_on_title, start=rid):
+        for row_widgets in self.ui_insts_on_title:
             for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
                 if col in row_widgets:
-                    row_widgets[col].grid(row=i, column=j)
+                    row_widgets[col].grid(row=rid, column=j)
             rid  +=1
 
         for plan_key in self.ui_new_plans:
@@ -126,10 +129,10 @@ class tkinterUI(tk.Tk):
             for i, col_widgets in enumerate(self.ui_new_plans_header[plan_key], start=1):
                 col_widgets.grid(row=rid, column=i)
             rid+=1
-            for i, row_widgets in enumerate(self.ui_new_plans[plan_key], start=rid):
+            for row_widgets in self.ui_new_plans[plan_key]:
                 for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
                     if col in row_widgets:
-                        row_widgets[col].grid(row=i, column=j)
+                        row_widgets[col].grid(row=rid, column=j)
                 rid  +=1
 
         self.ui_new_agreements_label.grid(row=rid, column=0, columnspan=5, sticky="w")
@@ -137,10 +140,10 @@ class tkinterUI(tk.Tk):
         for i, col_widgets in enumerate(self.ui_new_agreements_header, start=1):
             col_widgets.grid(row=rid, column=i)
         rid+=1
-        for i, row_widgets in enumerate(self.ui_new_agreements, start=rid):
+        for row_widgets in self.ui_new_agreements:
             for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
                 if col in row_widgets:
-                    row_widgets[col].grid(row=i, column=j)
+                    row_widgets[col].grid(row=rid, column=j)
             rid  +=1
         self.app.set_app_state(self.get_ui_state())
 
@@ -190,7 +193,7 @@ class tkinterUI(tk.Tk):
                 program_version = header["program_version"]
                 if program_name==__PROGRAM_NAME__:
                     if file_version >= __FILE_MIN_VERSION__ and file_version <= __FILE_VERSION__:
-                        print("Header is correct, loading file as normal")
+                        print("Version of program from file: %s"%program_version)
                     else:
                         mb.showerror("Unable to open file", f"There was an error reading the file {file_path}.\nInvalid version number! File is {file_version}, should be between {__FILE_MIN_VERSION__}, {__FILE_VERSION__}\nPlease track down a compatible version of this program, such as \n{program_version}")
                         return
@@ -245,7 +248,7 @@ class tkinterUI(tk.Tk):
         return ["Item","Document/Desc", "Copies/Dept","Signatories","Condition of Approval","Circulation Notes","Status"]
         """
         row = {}
-        row["Item"]=tk.Label(self.scrollable_frame,text="%i"%(len(self.ui_new_agreements)+1))
+        row["Item"]=tk.Label(self.scrollable_frame,text="%i"%(len(plan)+1))
         row["Document/Desc"]=tk.Entry(self.scrollable_frame,width=25)
         row["Document/Desc"].insert(0, doc_desc)
         row["Copies/Dept"]=tk.Entry(self.scrollable_frame,width=25)
