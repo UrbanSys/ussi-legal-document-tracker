@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
+from docsignview import docsignview
 from tkinter import filedialog as fd
 
 try:
@@ -35,6 +36,7 @@ class tkinterUI(tk.Tk):
         self.geometry("1000x600")
 
         self.app = DocTrackerActions()
+        self.docview = docsignview()
 
         #Main view
         canvas = tk.Canvas(main_view)
@@ -93,8 +95,10 @@ class tkinterUI(tk.Tk):
         button.grid(row=0, column=1)
         button = tk.Button(bottom_view,text="Load",command=self.load_tracker)
         button.grid(row=0, column=2)
-        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button = tk.Button(bottom_view,text="Generate Documents from Templates",command=self.gen_docs)
         button.grid(row=0, column=3)
+        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button.grid(row=0, column=4)
 
         self.regrid_rows()
 
@@ -150,6 +154,10 @@ class tkinterUI(tk.Tk):
 
     def dummy(self):
         mb.showinfo("message","message")
+
+    def gen_docs(self):
+        self.app.set_app_state(self.get_ui_state())
+        self.docview.determine_documents_to_sign(self.app.get_app_state())
 
     def load_instruments_on_title(self):
         filepath = fd.askopenfilename(
