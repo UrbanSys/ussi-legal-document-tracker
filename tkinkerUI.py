@@ -125,6 +125,18 @@ class tkinterUI(tk.Tk):
             for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
                 if col in row_widgets:
                     row_widgets[col].grid(row=rid, column=j)
+                    try:
+                        status = row_widgets["Status_Val"].get()
+                        if status=="Prepared":
+                            row_widgets[col].config(bg="lightgreen")
+                        elif status=="Complete" or status=="No Action Required":
+                            row_widgets[col].config(bg="gray")
+                        elif status=="Client for Execution":
+                            row_widgets[col].config(bg="#fff1c9")
+                        else:
+                            row_widgets[col].config(bg="white")
+                    except:
+                        pass
             rid  +=1
 
         for plan_key in self.ui_new_plans:
@@ -153,6 +165,7 @@ class tkinterUI(tk.Tk):
 
 
     def dummy(self):
+        self.regrid_rows()
         mb.showinfo("message","message")
 
     def gen_docs(self):
@@ -314,6 +327,14 @@ class tkinterUI(tk.Tk):
         location[name].bind("<MouseWheel>", self._dont_scroll)
         location[name]['values']=items
         location[name].set(items[0])
+
+        def selection_changed(event):
+            """
+            This function is called when the combobox selection changes.
+            """
+            self.regrid_rows()
+
+        location[name].bind("<<ComboboxSelected>>", selection_changed)
 
     def get_ui_state(self):
         ui_state = {
