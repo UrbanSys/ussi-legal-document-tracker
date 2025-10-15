@@ -171,6 +171,7 @@ class tkinterUI(tk.Tk):
     def gen_docs(self):
         self.app.set_app_state(self.get_ui_state())
         self.docview.determine_documents_to_sign(self.app.get_app_state())
+        self.docview.generate_documents_gui(self)
 
     def load_instruments_on_title(self):
         filepath = fd.askopenfilename(

@@ -1,7 +1,67 @@
+import tkinter as tk
 
 class docsignview():
     def __init__(self):
         pass
+
+    def generate_documents_gui(self, root):
+        self.window = tk.Toplevel(root)
+        self.window.title("Existing Encumbrances")
+        self.window.minsize(width=800,height=620)
+        self.window.withdraw()
+        self.window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
+        self.window.deiconify()
+
+        canvas = tk.Canvas(self.window)
+        scrollbar = tk.Scrollbar(self.window, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = tk.Frame(canvas)
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        self.row_index = 0
+        
+        self.write_header("Consent Docs")
+        for key in self.consent_documents_to_generate:
+            signer_docs = self.consent_documents_to_generate[key]
+            docs_string = ""
+            for doc in signer_docs:
+                docs_string = docs_string + doc["doc_number"] + ", "
+            self.write_line(key,docs_string)
+
+        self.write_header("Partial Discharge Docs")   
+        for item in self.partial_discharge_documents_to_generate:
+            self.write_line(item["company"],item["doc_number"])
+
+        self.write_header("Full Discharge Docs")
+        for item in self.full_discharge_documents_to_generate:
+            self.write_line(item["company"],item["doc_number"])
+
+    def _on_mousewheel(self, event):
+        # On Windows and Mac, event.delta is multiples of 120
+        self.scrollable_frame.update_idletasks()  # Make sure layout updated
+        self.scrollable_frame.master.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    def write_line(self, company, doc_nums):
+        txt = tk.Label(self.scrollable_frame,text=company,justify="left")
+        txt.grid(row=self.row_index,column=0)
+        txt2 = tk.Label(self.scrollable_frame,text=doc_nums,justify="left")
+        txt2.grid(row=self.row_index,column=1)
+        chk = tk.Checkbutton(self.scrollable_frame)
+        chk.grid(row=self.row_index,column=2)
+        chk.select()
+        self.row_index+=1
+
+    def write_header(self, text):
+        txt = tk.Label(self.scrollable_frame,text=text,font=("Arial", 10, "bold"))
+        txt.grid(row=self.row_index,column=0)
+        self.row_index+=1
 
     def determine_documents_to_sign(self,app_state):
         """
@@ -11,9 +71,9 @@ class docsignview():
             "plans": {}
         }
         """
-        consent_documents_to_generate = {}
-        partial_discharge_documents_to_generate = []
-        full_discharge_documents_to_generate = []
+        self.consent_documents_to_generate = {}
+        self.partial_discharge_documents_to_generate = []
+        self.full_discharge_documents_to_generate = []
 
         existing_enc_on_title = app_state["existing_encumbrances_on_title"]
 
@@ -21,7 +81,6 @@ class docsignview():
         for doc in existing_enc_on_title:
             signatories = doc["Signatories"].lower()
             sign_split = signatories.split("\n")
-            print(doc["Action"])
             if doc["Action"]=="Consent":
                 for signer in sign_split:
                     if signer != '':
@@ -29,9 +88,9 @@ class docsignview():
                             "company": signer,
                             "doc_number": doc["Document #"]
                         }
-                        if signer not in consent_documents_to_generate:
-                            consent_documents_to_generate[signer] = []
-                        consent_documents_to_generate[signer].append(consent_doc)
+                        if signer not in self.consent_documents_to_generate:
+                            self.consent_documents_to_generate[signer] = []
+                        self.consent_documents_to_generate[signer].append(consent_doc)
             if doc["Action"]=="Partial Discharge":
                 for signer in sign_split:
                     if signer != '':
@@ -39,7 +98,7 @@ class docsignview():
                             "company": signer,
                             "doc_number": doc["Document #"]
                         }
-                        partial_discharge_documents_to_generate.append(partial_discharge_doc)
+                        self.partial_discharge_documents_to_generate.append(partial_discharge_doc)
             if doc["Action"]=="Full Discharge":
                 for signer in sign_split:
                     if signer != '':
@@ -47,17 +106,4 @@ class docsignview():
                             "company": signer,
                             "doc_number": doc["Document #"]
                         }
-                        full_discharge_documents_to_generate.append(full_discharge_doc)
-
-
-        for key in consent_documents_to_generate:
-            print("Consent document %s"%key)
-            signer_docs = consent_documents_to_generate[key]
-            for doc in signer_docs:
-                print(doc["doc_number"])
-
-        for item in partial_discharge_documents_to_generate:
-            print("PD document %s - %s"%(item["company"],item["doc_number"]))
-
-        for item in full_discharge_documents_to_generate:
-            print("FD document %s - %s"%(item["company"],item["doc_number"]))
+                        self.full_discharge_documents_to_generate.append(full_discharge_doc)
