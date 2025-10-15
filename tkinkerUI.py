@@ -163,15 +163,28 @@ class tkinterUI(tk.Tk):
             rid  +=1
         self.app.set_app_state(self.get_ui_state())
 
+    def auto_set_no_action_required(self):
+        for row_widgets in self.ui_insts_on_title:
+            for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
+                if col in row_widgets:
+                    status = row_widgets["Action_Val"].get()
+                    if status == "No Action Required":
+                        status = row_widgets["Status_Val"].set("No Action Required")
+        self.regrid_rows()
+
 
     def dummy(self):
-        self.regrid_rows()
+        self.auto_set_no_action_required()
         mb.showinfo("message","message")
 
     def gen_docs(self):
         self.app.set_app_state(self.get_ui_state())
         self.docview.determine_documents_to_sign(self.app.get_app_state())
-        self.docview.generate_documents_gui(self)
+        if not self.docview.is_view_empty():
+            self.auto_set_no_action_required()
+            self.docview.generate_documents_gui(self)
+        else:
+            mb.showerror("No actions set!", "No actions are currently set. Please choose actions in order to generate legal documents.")
 
     def load_instruments_on_title(self):
         filepath = fd.askopenfilename(

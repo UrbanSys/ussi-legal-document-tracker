@@ -2,7 +2,9 @@ import tkinter as tk
 
 class docsignview():
     def __init__(self):
-        pass
+        self.consent_documents_to_generate = {}
+        self.partial_discharge_documents_to_generate = []
+        self.full_discharge_documents_to_generate = []
 
     def generate_documents_gui(self, root):
         self.window = tk.Toplevel(root)
@@ -62,6 +64,13 @@ class docsignview():
         txt = tk.Label(self.scrollable_frame,text=text,font=("Arial", 10, "bold"))
         txt.grid(row=self.row_index,column=0)
         self.row_index+=1
+
+    def is_view_empty(self):
+        total_len = len(self.consent_documents_to_generate)+len(self.partial_discharge_documents_to_generate)+len(self.full_discharge_documents_to_generate)
+        if total_len ==0:
+            return True
+        else:
+            return False
 
     def determine_documents_to_sign(self,app_state):
         """
