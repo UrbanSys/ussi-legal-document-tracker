@@ -6,7 +6,6 @@ from tkinter import messagebox as mb
 import subprocess
 import sys
 import re
-import utils
 
 IMPORTED_DOCX=0
 
@@ -288,6 +287,9 @@ class Templates:
         # Submit button
 		submit_btn = tk.Button(root, text="Submit", command=self.submit_newplan)
 		submit_btn.grid(row=13, column=0, columnspan=6, pady=15)
+		
+
+
 
 	def generate_gui_template_chooser(self, gui_choice):
 		self.temp_picker = tk.Toplevel(self.tk)
@@ -597,7 +599,21 @@ class Templates:
 			"signatories": ""
 		}
 	
+	def doc_find_and_replace(self, doc, find_text, replace_text):
+		# Replace in paragraphs
+		for paragraph in doc.paragraphs:
+			for run in paragraph.runs:
+				if find_text in run.text:
+					run.text = run.text.replace(find_text, replace_text)
 
+		# Replace in tables
+		for table in doc.tables:
+			for row in table.rows:
+				for cell in row.cells:
+					for paragraph in cell.paragraphs:
+						for run in paragraph.runs:
+							if find_text in run.text:
+								run.text = run.text.replace(find_text, replace_text)
 
 	def generate_surveyor_aff(self, path, surveyor, ftp, file, drawing, legaldesc, startdate, enddate, surv_city,out):
 		doc = Document(path)
