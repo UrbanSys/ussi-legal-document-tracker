@@ -54,6 +54,16 @@ class HandleActions():
         for item in self.full_discharge_documents_to_generate:
             self.write_line(item["company"],item["doc_number"], doc,self.consents_templates)
 
+        self._bind_mousewheel_to_widgets(self.scrollable_frame)
+
+    def _bind_mousewheel_to_widgets(self, widget):
+        widget.bind("<Enter>", lambda e: widget.bind_all("<MouseWheel>", self._on_mousewheel))
+        widget.bind("<Leave>", lambda e: widget.unbind_all("<MouseWheel>"))
+        if isinstance(widget, (tk.Frame, tk.LabelFrame, tk.Toplevel, tk.Canvas)):
+            for child in widget.winfo_children():
+                self._bind_mousewheel_to_widgets(child)
+
+
     def _on_mousewheel(self, event):
         try:
             widget = self.window.focus_get()
@@ -78,7 +88,7 @@ class HandleActions():
         txt2.grid(row=self.row_index,column=1, sticky="w")
         if doc_data:
             combo_var = tk.StringVar(value="")  # Default is blank
-            combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, width=80)
+            combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, state="readonly",width=90)
             if options:
                 combobox['values'] = [""] + self.generate_gui_template_chooser(options)
             combobox.grid(row=self.row_index, column=2, sticky="we")

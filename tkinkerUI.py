@@ -112,6 +112,14 @@ class tkinterUI(tk.Tk):
         self._on_mousewheel(event)
         return "break"
     
+    def _bind_mousewheel_to_widgets(self, widget):
+        widget.bind("<Enter>", lambda e: widget.bind_all("<MouseWheel>", self._on_mousewheel))
+        widget.bind("<Leave>", lambda e: widget.unbind_all("<MouseWheel>"))
+        if isinstance(widget, (tk.Frame, tk.LabelFrame, tk.Toplevel, tk.Canvas)):
+            for child in widget.winfo_children():
+                self._bind_mousewheel_to_widgets(child)
+
+    
     def format_rows(self):
         for row_widgets in self.ui_insts_on_title:
             for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
@@ -196,6 +204,7 @@ class tkinterUI(tk.Tk):
         self.app.set_app_state(self.get_ui_state())
 
         self.format_rows()
+        self._bind_mousewheel_to_widgets(self.scrollable_frame)
 
     def auto_set_no_action_required(self):
         for row_widgets in self.ui_insts_on_title:
