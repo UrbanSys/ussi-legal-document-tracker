@@ -51,10 +51,10 @@ class docsignview():
         self.scrollable_frame.master.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def write_line(self, company, doc_nums):
-        txt = tk.Label(self.scrollable_frame,text=company,justify="left")
-        txt.grid(row=self.row_index,column=0)
-        txt2 = tk.Label(self.scrollable_frame,text=doc_nums,justify="left")
-        txt2.grid(row=self.row_index,column=1)
+        txt = tk.Label(self.scrollable_frame,text=company,anchor="w")
+        txt.grid(row=self.row_index,column=0, sticky="w")
+        txt2 = tk.Label(self.scrollable_frame,text=doc_nums,anchor="w")
+        txt2.grid(row=self.row_index,column=1, sticky="w")
         chk = tk.Checkbutton(self.scrollable_frame)
         chk.grid(row=self.row_index,column=2)
         chk.select()
@@ -67,7 +67,7 @@ class docsignview():
 
     def is_view_empty(self):
         total_len = len(self.consent_documents_to_generate)+len(self.partial_discharge_documents_to_generate)+len(self.full_discharge_documents_to_generate)
-        if total_len ==0:
+        if total_len == 0:
             return True
         else:
             return False
