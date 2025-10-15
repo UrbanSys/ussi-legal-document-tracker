@@ -1,7 +1,13 @@
+import os
 import tkinter as tk
+from tkinter import ttk
+from utils import *
+
+DEFAULT_CONFIG = "Z:/Urban Survey/Calgary/Automation/discharge_consent_config.txt"
 
 class HandleActions():
     def __init__(self):
+        (self.full_discharges_templates,self.partial_discharges_templates,self.consents_templates) = load_config(DEFAULT_CONFIG)
         self.consent_documents_to_generate = {}
         self.partial_discharge_documents_to_generate = []
         self.full_discharge_documents_to_generate = []
@@ -9,10 +15,12 @@ class HandleActions():
     def generate_documents_gui(self, root):
         self.window = tk.Toplevel(root)
         self.window.title("Existing Encumbrances")
-        self.window.minsize(width=800,height=620)
+        self.window.minsize(width=1400,height=620)
         self.window.withdraw()
         self.window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
         self.window.deiconify()
+
+        (self.full_discharges_templates,self.partial_discharges_templates,self.consents_templates) = load_config(DEFAULT_CONFIG)
 
         canvas = tk.Canvas(self.window)
         scrollbar = tk.Scrollbar(self.window, orient="vertical", command=canvas.yview)
@@ -21,7 +29,8 @@ class HandleActions():
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
-        canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", self._on_mousewheel))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.pack(side="left", fill="both", expand=True)
@@ -35,30 +44,68 @@ class HandleActions():
             docs_string = ""
             for doc in signer_docs:
                 docs_string = docs_string + doc["doc_number"] + ", "
-            self.write_line(key,docs_string)
+            self.write_line(key,docs_string, doc,self.full_discharges_templates)
 
         self.write_header("Partial Discharge Docs")   
         for item in self.partial_discharge_documents_to_generate:
-            self.write_line(item["company"],item["doc_number"])
+            self.write_line(item["company"],item["doc_number"], doc,self.partial_discharges_templates)
 
         self.write_header("Full Discharge Docs")
         for item in self.full_discharge_documents_to_generate:
-            self.write_line(item["company"],item["doc_number"])
+            self.write_line(item["company"],item["doc_number"], doc,self.consents_templates)
 
     def _on_mousewheel(self, event):
-        # On Windows and Mac, event.delta is multiples of 120
-        self.scrollable_frame.update_idletasks()  # Make sure layout updated
-        self.scrollable_frame.master.yview_scroll(int(-1*(event.delta/120)), "units")
+        try:
+            widget = self.window.focus_get()
+            # Skip scrolling if the focused widget is a Combobox
+            if isinstance(widget, ttk.Combobox):
+                return
+        except Exception as e:
+            # If the widget can't be resolved (e.g., 'popdown'), just ignore the scroll
+            return
 
-    def write_line(self, company, doc_nums):
+        # Otherwise, scroll the canvas
+        self.scrollable_frame.master.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _dont_scroll(self,event):
+        self._on_mousewheel(event)
+        return "break"
+
+    def write_line(self, company, doc_nums, doc_data=None,options=None):
         txt = tk.Label(self.scrollable_frame,text=company,anchor="w")
         txt.grid(row=self.row_index,column=0, sticky="w")
         txt2 = tk.Label(self.scrollable_frame,text=doc_nums,anchor="w")
         txt2.grid(row=self.row_index,column=1, sticky="w")
-        chk = tk.Checkbutton(self.scrollable_frame)
-        chk.grid(row=self.row_index,column=2)
-        chk.select()
+        if doc_data:
+            combo_var = tk.StringVar(value="")  # Default is blank
+            combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, width=80)
+            if options:
+                combobox['values'] = [""] + self.generate_gui_template_chooser(options)
+            combobox.grid(row=self.row_index, column=2, sticky="we")
+            doc_data["selected_template"] = combo_var
+            combobox.bind("<MouseWheel>", self._dont_scroll)
         self.row_index+=1
+
+    def generate_gui_template_chooser(self, gui_choice):
+        grouped = {}
+        for item in gui_choice:
+            muni = item["municipality"]
+            file_name = os.path.basename(item["path"])
+            grouped.setdefault(muni, []).append(file_name)
+
+        self.selected_file = tk.StringVar()
+        self.selected_file.set(None)
+
+        ret_array = []
+
+        for municipality, paths in grouped.items():
+            #municipality
+
+            for path in paths:
+                file_name = os.path.basename(path)
+                ret_array.append(municipality+" - "+file_name)
+        
+        return ret_array
 
     def write_header(self, text):
         txt = tk.Label(self.scrollable_frame,text=text,font=("Arial", 10, "bold"))

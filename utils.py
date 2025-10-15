@@ -181,3 +181,37 @@ def process_project_string(projectnumber):
 
 		#print("%s.%s.%s"%(project_parts[0],project_parts[1],project_parts[2]))
 		return (project_parts[1],project_parts[2],project_parts[3])
+
+def load_config(config_file):
+    full_discharges = []
+    partial_discharges = []
+    consents = []
+    try:
+        with open(config_file) as f:
+            for x in f:
+                line = x.rstrip().split("|")
+                if len(line)>=2:
+                    command = line[0]
+
+                    municipality = "Other"
+
+                    if len(line) >=3:
+                        municipality = line[2]
+
+                    temp_dict = {
+                        "doc_type":line[0],
+                        "path":line[1].replace("\"",""),
+                        "municipality":municipality,
+                    }
+                    
+                    if command=="Full Discharge":
+                        full_discharges.append(temp_dict)
+                    elif command=="Partial Discharge":
+                        partial_discharges.append(temp_dict)
+                    elif command=="Consent":
+                        consents.append(temp_dict)
+                        
+    except FileNotFoundError:
+        print("Unable to read file!")
+
+    return (full_discharges,partial_discharges,consents)
