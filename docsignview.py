@@ -1,6 +1,6 @@
 import tkinter as tk
 
-class docsignview():
+class HandleActions():
     def __init__(self):
         self.consent_documents_to_generate = {}
         self.partial_discharge_documents_to_generate = []

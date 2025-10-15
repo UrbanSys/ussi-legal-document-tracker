@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
-from docsignview import docsignview
+from docsignview import HandleActions
 from tkinter import filedialog as fd
 
 try:
@@ -36,7 +36,7 @@ class tkinterUI(tk.Tk):
         self.geometry("1000x600")
 
         self.app = DocTrackerActions()
-        self.docview = docsignview()
+        self.docview = HandleActions()
 
         #Main view
         canvas = tk.Canvas(main_view)
@@ -110,6 +110,49 @@ class tkinterUI(tk.Tk):
     def _dont_scroll(self,event):
         self._on_mousewheel(event)
         return "break"
+    
+    def format_rows(self):
+        for row_widgets in self.ui_insts_on_title:
+            for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
+                if col in row_widgets:
+                    if row_widgets[col].winfo_class()=="Entry":
+                        status = row_widgets["Status_Val"].get()
+                        if status=="Prepared":
+                            row_widgets[col].config(bg="lightgreen")
+                        elif status=="Complete" or status=="No Action Required":
+                            row_widgets[col].config(bg="gray")
+                        elif status=="Client for Execution":
+                            row_widgets[col].config(bg="#fff1c9")
+                        else:
+                            row_widgets[col].config(bg="white")
+        for row_widgets in self.ui_new_agreements:
+            for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
+                if col in row_widgets:
+                    if row_widgets[col].winfo_class()=="Entry":
+                        status = row_widgets["Status_Val"].get()
+                        if status=="Prepared":
+                            row_widgets[col].config(bg="lightgreen")
+                        elif status=="Complete" or status=="No Action Required":
+                            row_widgets[col].config(bg="gray")
+                        elif status=="Client for Execution":
+                            row_widgets[col].config(bg="#fff1c9")
+                        else:
+                            row_widgets[col].config(bg="white")
+
+        for plan_key in self.ui_new_plans:
+            for row_widgets in self.ui_new_plans[plan_key]:
+                for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
+                    if col in row_widgets:
+                        if row_widgets[col].winfo_class()=="Entry":
+                            status = row_widgets["Status_Val"].get()
+                            if status=="Prepared":
+                                row_widgets[col].config(bg="lightgreen")
+                            elif status=="Complete" or status=="No Action Required":
+                                row_widgets[col].config(bg="gray")
+                            elif status=="Client for Execution":
+                                row_widgets[col].config(bg="#fff1c9")
+                            else:
+                                row_widgets[col].config(bg="white")
 
     def regrid_rows(self):
         for widget in self.scrollable_frame.winfo_children():
@@ -125,18 +168,6 @@ class tkinterUI(tk.Tk):
             for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
                 if col in row_widgets:
                     row_widgets[col].grid(row=rid, column=j)
-                    try:
-                        status = row_widgets["Status_Val"].get()
-                        if status=="Prepared":
-                            row_widgets[col].config(bg="lightgreen")
-                        elif status=="Complete" or status=="No Action Required":
-                            row_widgets[col].config(bg="gray")
-                        elif status=="Client for Execution":
-                            row_widgets[col].config(bg="#fff1c9")
-                        else:
-                            row_widgets[col].config(bg="white")
-                    except:
-                        pass
             rid  +=1
 
         for plan_key in self.ui_new_plans:
@@ -162,6 +193,8 @@ class tkinterUI(tk.Tk):
                     row_widgets[col].grid(row=rid, column=j)
             rid  +=1
         self.app.set_app_state(self.get_ui_state())
+
+        self.format_rows()
 
     def auto_set_no_action_required(self):
         for row_widgets in self.ui_insts_on_title:
@@ -346,7 +379,7 @@ class tkinterUI(tk.Tk):
             """
             This function is called when the combobox selection changes.
             """
-            self.regrid_rows()
+            self.format_rows()
 
         location[name].bind("<<ComboboxSelected>>", selection_changed)
 
