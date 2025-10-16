@@ -2,15 +2,20 @@ import os
 import tkinter as tk
 from tkinter import ttk
 from utils import *
+from tkinter import messagebox as mb
 
 DEFAULT_CONFIG = "Z:/Urban Survey/Calgary/Automation/discharge_consent_config.txt"
 
 class HandleActions():
-    def __init__(self,app=None):
+    def __init__(self,app=None,main_gui_callback = None):
         (self.full_discharges_templates,self.partial_discharges_templates,self.consents_templates) = load_config(DEFAULT_CONFIG)
         self.app = app
+        self.window = None
+        self.main_gui_callback = main_gui_callback
 
     def generate_documents_gui(self, root):
+        if self.window:
+            self.window.withdraw()
         self.window = tk.Toplevel(root)
         self.window.title("Existing Encumbrances")
         self.window.minsize(width=1400,height=620)
@@ -20,8 +25,13 @@ class HandleActions():
 
         (self.full_discharges_templates,self.partial_discharges_templates,self.consents_templates) = load_config(DEFAULT_CONFIG)
 
-        canvas = tk.Canvas(self.window)
-        scrollbar = tk.Scrollbar(self.window, orient="vertical", command=canvas.yview)
+        main_view = tk.Frame(self.window)
+        main_view.pack(side="top",fill="both", expand=True)
+        bottom_view = tk.Frame(self.window)
+        bottom_view.pack(side="bottom")
+
+        canvas = tk.Canvas(main_view)
+        scrollbar = tk.Scrollbar(main_view, orient="vertical", command=canvas.yview)
         self.scrollable_frame = tk.Frame(canvas)
         self.scrollable_frame.bind(
             "<Configure>",
@@ -57,6 +67,9 @@ class HandleActions():
             self.write_line(item["company"],item["doc_number"], doc,self.consents_templates)
 
         self._bind_mousewheel_to_widgets(self.scrollable_frame)
+
+        button = tk.Button(bottom_view,text="Generate Templates",command=self.do_templates)
+        button.grid(row=0, column=0)
 
     def _bind_mousewheel_to_widgets(self, widget):
         widget.bind("<Enter>", lambda e: widget.bind_all("<MouseWheel>", self._on_mousewheel))
@@ -129,3 +142,9 @@ class HandleActions():
 
     def determine_documents_to_sign(self):
         self.app.set_docs_to_sign()
+
+    def do_templates(self):
+        if self.main_gui_callback:
+            #self.app.do_templates()
+            self.main_gui_callback.auto_set_no_action_required()
+            mb.showinfo("message","message")

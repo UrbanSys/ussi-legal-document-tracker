@@ -36,7 +36,7 @@ class tkinterUI(tk.Tk):
         self.geometry("1000x600")
 
         self.app = DocTrackerActions()
-        self.docview = HandleActions(self.app)
+        self.docview = HandleActions(self.app,self)
 
         #Main view
         canvas = tk.Canvas(main_view)
@@ -217,14 +217,12 @@ class tkinterUI(tk.Tk):
 
 
     def dummy(self):
-        self.auto_set_no_action_required()
         mb.showinfo("message","message")
 
     def gen_docs(self):
         self.app.set_app_state(self.get_ui_state())
         self.docview.determine_documents_to_sign()
         if not self.docview.is_view_empty():
-            self.auto_set_no_action_required()
             self.docview.generate_documents_gui(self)
         else:
             mb.showerror("No actions set!", "No actions are currently set. Please choose actions in order to generate legal documents.")
