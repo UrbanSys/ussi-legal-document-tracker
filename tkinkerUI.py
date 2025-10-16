@@ -36,7 +36,7 @@ class tkinterUI(tk.Tk):
         self.geometry("1000x600")
 
         self.app = DocTrackerActions()
-        self.docview = HandleActions()
+        self.docview = HandleActions(self.app)
 
         #Main view
         canvas = tk.Canvas(main_view)
@@ -222,7 +222,7 @@ class tkinterUI(tk.Tk):
 
     def gen_docs(self):
         self.app.set_app_state(self.get_ui_state())
-        self.docview.determine_documents_to_sign(self.app.get_app_state())
+        self.docview.determine_documents_to_sign()
         if not self.docview.is_view_empty():
             self.auto_set_no_action_required()
             self.docview.generate_documents_gui(self)

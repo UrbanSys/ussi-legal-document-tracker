@@ -6,11 +6,9 @@ from utils import *
 DEFAULT_CONFIG = "Z:/Urban Survey/Calgary/Automation/discharge_consent_config.txt"
 
 class HandleActions():
-    def __init__(self):
+    def __init__(self,app=None):
         (self.full_discharges_templates,self.partial_discharges_templates,self.consents_templates) = load_config(DEFAULT_CONFIG)
-        self.consent_documents_to_generate = {}
-        self.partial_discharge_documents_to_generate = []
-        self.full_discharge_documents_to_generate = []
+        self.app = app
 
     def generate_documents_gui(self, root):
         self.window = tk.Toplevel(root)
@@ -37,21 +35,25 @@ class HandleActions():
         scrollbar.pack(side="right", fill="y")
 
         self.row_index = 0
+
+        consent_documents_to_generate = self.app.get_consent_documents_to_generate()
+        partial_discharge_documents_to_generate  = self.app.get_partial_discharge_documents_to_generate()
+        full_discharge_documents_to_generate  = self.app.get_full_discharge_documents_to_generate()
         
         self.write_header("Consent Docs")
-        for key in self.consent_documents_to_generate:
-            signer_docs = self.consent_documents_to_generate[key]
+        for key in consent_documents_to_generate:
+            signer_docs = consent_documents_to_generate[key]
             docs_string = ""
             for doc in signer_docs:
                 docs_string = docs_string + doc["doc_number"] + ", "
             self.write_line(key,docs_string, doc,self.full_discharges_templates)
 
         self.write_header("Partial Discharge Docs")   
-        for item in self.partial_discharge_documents_to_generate:
+        for item in partial_discharge_documents_to_generate:
             self.write_line(item["company"],item["doc_number"], doc,self.partial_discharges_templates)
 
         self.write_header("Full Discharge Docs")
-        for item in self.full_discharge_documents_to_generate:
+        for item in full_discharge_documents_to_generate:
             self.write_line(item["company"],item["doc_number"], doc,self.consents_templates)
 
         self._bind_mousewheel_to_widgets(self.scrollable_frame)
@@ -113,7 +115,7 @@ class HandleActions():
 
             for path in paths:
                 file_name = os.path.basename(path)
-                ret_array.append(municipality+" - "+file_name)
+                ret_array.append(municipality+" | "+file_name)
         
         return ret_array
 
@@ -123,53 +125,7 @@ class HandleActions():
         self.row_index+=1
 
     def is_view_empty(self):
-        total_len = len(self.consent_documents_to_generate)+len(self.partial_discharge_documents_to_generate)+len(self.full_discharge_documents_to_generate)
-        if total_len == 0:
-            return True
-        else:
-            return False
+        return self.app.has_docs_to_generate()
 
-    def determine_documents_to_sign(self,app_state):
-        """
-        ui_state = {
-            "existing_encumbrances_on_title": [],
-            "new_agreements": [],
-            "plans": {}
-        }
-        """
-        self.consent_documents_to_generate = {}
-        self.partial_discharge_documents_to_generate = []
-        self.full_discharge_documents_to_generate = []
-
-        existing_enc_on_title = app_state["existing_encumbrances_on_title"]
-
-
-        for doc in existing_enc_on_title:
-            signatories = doc["Signatories"].lower()
-            sign_split = signatories.split("\n")
-            if doc["Action"]=="Consent":
-                for signer in sign_split:
-                    if signer != '':
-                        consent_doc = {
-                            "company": signer,
-                            "doc_number": doc["Document #"]
-                        }
-                        if signer not in self.consent_documents_to_generate:
-                            self.consent_documents_to_generate[signer] = []
-                        self.consent_documents_to_generate[signer].append(consent_doc)
-            if doc["Action"]=="Partial Discharge":
-                for signer in sign_split:
-                    if signer != '':
-                        partial_discharge_doc = {
-                            "company": signer,
-                            "doc_number": doc["Document #"]
-                        }
-                        self.partial_discharge_documents_to_generate.append(partial_discharge_doc)
-            if doc["Action"]=="Full Discharge":
-                for signer in sign_split:
-                    if signer != '':
-                        full_discharge_doc = {
-                            "company": signer,
-                            "doc_number": doc["Document #"]
-                        }
-                        self.full_discharge_documents_to_generate.append(full_discharge_doc)
+    def determine_documents_to_sign(self):
+        self.app.set_docs_to_sign()
