@@ -170,6 +170,11 @@ class HandleActions():
     def do_templates(self):
         doc_to_generate = []
 
+        should_continue = self.warn_if_incomplete_consents()
+
+        if not should_continue:
+            return
+
         for item in self.consent_doc_decisions:
             self.gen_doc_dict(item,doc_to_generate)
 
@@ -183,7 +188,7 @@ class HandleActions():
             self.app.do_templates(doc_to_generate,self.main_gui_callback)
             self.main_gui_callback.auto_set_no_action_required()
             self.window.withdraw()
-            mb.showinfo("message","message")
+            mb.showinfo("Finished Template Generation","Finished Template Generation")
 
     def gen_doc_dict(self,item,list):
         choice = item["selection"].get()
@@ -194,3 +199,42 @@ class HandleActions():
             doc_dict["docs"] = item["docs"]
             list.append(doc_dict)
             #ADD THINGS TO INCLUDE IN TEMPLATE
+
+    def warn_if_incomplete_consents(self):
+        consent_id_to_all_signers = {}
+        consent_id_to_selected_signers = {}
+
+        # Find both selected signers (ones that have a non blank option) and all signers
+        for item in self.consent_doc_decisions:
+            selected = item["selection"].get()
+            for doc in item["docs"]:
+                consent_id = doc.get("consent_id")
+                signer = doc.get("company") 
+
+                if not consent_id or not signer:
+                    continue
+
+                consent_id_to_all_signers.setdefault(consent_id, set()).add(signer)
+                if selected in self.choice_lookup:
+                    consent_id_to_selected_signers.setdefault(consent_id, set()).add(signer)
+
+        # Compare if not all signers selected for a given consent
+        partial_consents = []
+        for consent_id, all_signers in consent_id_to_all_signers.items():
+            selected_signers = consent_id_to_selected_signers.get(consent_id, set())
+            if selected_signers and selected_signers != all_signers:
+                missing = all_signers - selected_signers
+                partial_consents.append((consent_id, missing))
+
+        if partial_consents:
+            msg = "Warning: Some document numbers only have some of the signatories signed:\n\n"
+            for cid, missing in partial_consents:
+                msg += f"- Consent '{cid}' is missing selections for: {', '.join(missing)}\n"
+            msg+="Documents will be marked as prepared even though not all signatories will have documents generated.\nContinue?"
+            res = mb.askyesno("Partial Consent Selection", msg)
+            if res:
+                return True
+            else:
+                return False
+
+        return True

@@ -81,7 +81,8 @@ class DocTrackerActions():
                             consent_doc = {
                                 "company": signer,
                                 "doc_number": doc["Document #"],
-                                "desc": doc["Description"]
+                                "desc": doc["Description"],
+                                "consent_id": f"{doc['Document #']}|{doc['Description']}"
                             }
                             if signer not in self.consent_documents_to_generate:
                                 self.consent_documents_to_generate[signer] = []
