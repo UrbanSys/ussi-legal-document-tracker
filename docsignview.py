@@ -12,6 +12,9 @@ class HandleActions():
         self.app = app
         self.window = None
         self.main_gui_callback = main_gui_callback
+        self.consent_doc_decisions = []
+        self.partial_doc_decisions = []
+        self.full_doc_decisions = []
 
     def generate_documents_gui(self, root):
         if self.window:
@@ -56,15 +59,15 @@ class HandleActions():
             docs_string = ""
             for doc in signer_docs:
                 docs_string = docs_string + doc["doc_number"] + ", "
-            self.write_line(key,docs_string, doc,self.full_discharges_templates)
+            self.write_line(key,docs_string,self.consent_doc_decisions,self.full_discharges_templates)
 
         self.write_header("Partial Discharge Docs")   
         for item in partial_discharge_documents_to_generate:
-            self.write_line(item["company"],item["doc_number"], doc,self.partial_discharges_templates)
+            self.write_line(item["company"],item["doc_number"], self.partial_doc_decisions,self.partial_discharges_templates)
 
         self.write_header("Full Discharge Docs")
         for item in full_discharge_documents_to_generate:
-            self.write_line(item["company"],item["doc_number"], doc,self.consents_templates)
+            self.write_line(item["company"],item["doc_number"], self.full_doc_decisions,self.consents_templates)
 
         self._bind_mousewheel_to_widgets(self.scrollable_frame)
 
@@ -96,19 +99,21 @@ class HandleActions():
         self._on_mousewheel(event)
         return "break"
 
-    def write_line(self, company, doc_nums, doc_data=None,options=None):
+    def write_line(self, company, doc_nums, doc_list,options=None):
         txt = tk.Label(self.scrollable_frame,text=company,anchor="w")
         txt.grid(row=self.row_index,column=0, sticky="w")
         txt2 = tk.Label(self.scrollable_frame,text=doc_nums,anchor="w")
         txt2.grid(row=self.row_index,column=1, sticky="w")
-        if doc_data:
-            combo_var = tk.StringVar(value="")  # Default is blank
-            combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, state="readonly",width=90)
-            if options:
-                combobox['values'] = [""] + self.generate_gui_template_chooser(options)
-            combobox.grid(row=self.row_index, column=2, sticky="we")
-            doc_data["selected_template"] = combo_var
-            combobox.bind("<MouseWheel>", self._dont_scroll)
+
+        combo_var = tk.StringVar(value="")  # Default is blank
+        combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, state="readonly",width=90)
+        if options:
+            combobox['values'] = [""] + self.generate_gui_template_chooser(options)
+        combobox.grid(row=self.row_index, column=2, sticky="we")
+        doc_data = {}
+        doc_data["selection"] = combo_var
+        doc_list.append(doc_data)
+        combobox.bind("<MouseWheel>", self._dont_scroll)
         self.row_index+=1
 
     def generate_gui_template_chooser(self, gui_choice):
@@ -145,6 +150,6 @@ class HandleActions():
 
     def do_templates(self):
         if self.main_gui_callback:
-            #self.app.do_templates()
+            self.app.do_templates(self.consent_doc_decisions,self.partial_doc_decisions,self.full_doc_decisions)
             self.main_gui_callback.auto_set_no_action_required()
             mb.showinfo("message","message")
