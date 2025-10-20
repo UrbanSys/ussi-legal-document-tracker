@@ -173,6 +173,7 @@ class HandleActions():
         if self.main_gui_callback:
             self.app.do_templates(doc_to_generate,self.main_gui_callback)
             self.main_gui_callback.auto_set_no_action_required()
+            self.window.withdraw()
             mb.showinfo("message","message")
 
     def gen_doc_dict(self,item,list):

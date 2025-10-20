@@ -208,19 +208,16 @@ class tkinterUI(tk.Tk):
 
     def auto_set_no_action_required(self):
         for row_widgets in self.ui_insts_on_title:
-            for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
-                if col in row_widgets:
-                    status = row_widgets["Action_Val"].get()
-                    if status == "No Action Required":
-                        status = row_widgets["Status_Val"].set("No Action Required")
+            status = row_widgets["Action_Val"].get()
+            if status == "No Action Required":
+                row_widgets["Status_Val"].set("No Action Required")
         self.regrid_rows()
 
     def auto_set_prepared(self,prepared_documents):
-        print(prepared_documents)
         for row_widgets in self.ui_insts_on_title:
             doc_number = row_widgets["Document #"].get()
             if doc_number == prepared_documents:
-                status = row_widgets["Status_Val"].set("Prepared")
+                row_widgets["Status_Val"].set("Prepared")
         self.regrid_rows()
 
     def dummy(self):

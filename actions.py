@@ -71,36 +71,38 @@ class DocTrackerActions():
 
         existing_enc_on_title = app_state["existing_encumbrances_on_title"]
 
-
         for doc in existing_enc_on_title:
             signatories = doc["Signatories"].lower()
             sign_split = signatories.split("\n")
             if doc["Action"]=="Consent":
-                for signer in sign_split:
-                    if signer != '':
-                        consent_doc = {
-                            "company": signer,
-                            "doc_number": doc["Document #"]
-                        }
-                        if signer not in self.consent_documents_to_generate:
-                            self.consent_documents_to_generate[signer] = []
-                        self.consent_documents_to_generate[signer].append(consent_doc)
+                if doc["Status"]=="---":
+                    for signer in sign_split:
+                        if signer != '':
+                            consent_doc = {
+                                "company": signer,
+                                "doc_number": doc["Document #"]
+                            }
+                            if signer not in self.consent_documents_to_generate:
+                                self.consent_documents_to_generate[signer] = []
+                            self.consent_documents_to_generate[signer].append(consent_doc)
             if doc["Action"]=="Partial Discharge":
-                for signer in sign_split:
-                    if signer != '':
-                        partial_discharge_doc = {
-                            "company": signer,
-                            "doc_number": doc["Document #"]
-                        }
-                        self.partial_discharge_documents_to_generate.append(partial_discharge_doc)
+                if doc["Status"]=="---":
+                    for signer in sign_split:
+                        if signer != '':
+                            partial_discharge_doc = {
+                                "company": signer,
+                                "doc_number": doc["Document #"]
+                            }
+                            self.partial_discharge_documents_to_generate.append(partial_discharge_doc)
             if doc["Action"]=="Full Discharge":
-                for signer in sign_split:
-                    if signer != '':
-                        full_discharge_doc = {
-                            "company": signer,
-                            "doc_number": doc["Document #"]
-                        }
-                        self.full_discharge_documents_to_generate.append(full_discharge_doc)
+                if doc["Status"]=="---":
+                    for signer in sign_split:
+                        if signer != '':
+                            full_discharge_doc = {
+                                "company": signer,
+                                "doc_number": doc["Document #"]
+                            }
+                            self.full_discharge_documents_to_generate.append(full_discharge_doc)
     
     def do_templates(self, all_docs,prepared_callback=None):
         for doc in all_docs:
