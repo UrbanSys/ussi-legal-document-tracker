@@ -215,6 +215,13 @@ class tkinterUI(tk.Tk):
                         status = row_widgets["Status_Val"].set("No Action Required")
         self.regrid_rows()
 
+    def auto_set_prepared(self,prepared_documents):
+        print(prepared_documents)
+        for row_widgets in self.ui_insts_on_title:
+            doc_number = row_widgets["Document #"].get()
+            if doc_number == prepared_documents:
+                status = row_widgets["Status_Val"].set("Prepared")
+        self.regrid_rows()
 
     def dummy(self):
         mb.showinfo("message","message")

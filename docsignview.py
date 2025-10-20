@@ -62,18 +62,17 @@ class HandleActions():
         self.write_header("Consent Docs")
         for key in consent_documents_to_generate:
             signer_docs = consent_documents_to_generate[key]
-            docs_string = ""
-            for doc in signer_docs:
-                docs_string = docs_string + doc["doc_number"] + ", "
-            self.write_line(key,docs_string,self.consent_doc_decisions,self.full_discharges_templates)
+            self.write_line(key,signer_docs,self.consent_doc_decisions,self.full_discharges_templates)
 
         self.write_header("Partial Discharge Docs")   
         for item in partial_discharge_documents_to_generate:
-            self.write_line(item["company"],item["doc_number"], self.partial_doc_decisions,self.partial_discharges_templates)
+            doc_array = [{"doc_number": item["doc_number"]}]
+            self.write_line(item["company"],doc_array, self.partial_doc_decisions,self.partial_discharges_templates)
 
         self.write_header("Full Discharge Docs")
         for item in full_discharge_documents_to_generate:
-            self.write_line(item["company"],item["doc_number"], self.full_doc_decisions,self.consents_templates)
+            doc_array = [{"doc_number": item["doc_number"]}]
+            self.write_line(item["company"],doc_array, self.full_doc_decisions,self.consents_templates)
 
         self._bind_mousewheel_to_widgets(self.scrollable_frame)
 
@@ -86,7 +85,6 @@ class HandleActions():
         if isinstance(widget, (tk.Frame, tk.LabelFrame, tk.Toplevel, tk.Canvas)):
             for child in widget.winfo_children():
                 self._bind_mousewheel_to_widgets(child)
-
 
     def _on_mousewheel(self, event):
         try:
@@ -105,10 +103,13 @@ class HandleActions():
         self._on_mousewheel(event)
         return "break"
 
-    def write_line(self, company, doc_nums, doc_list,options=None):
+    def write_line(self, company, doc_array, doc_list,options=None):
         txt = tk.Label(self.scrollable_frame,text=company,anchor="w")
         txt.grid(row=self.row_index,column=0, sticky="w")
-        txt2 = tk.Label(self.scrollable_frame,text=doc_nums,anchor="w")
+        docs_string = ""
+        for doc in doc_array:
+            docs_string = docs_string + doc["doc_number"] + ", "
+        txt2 = tk.Label(self.scrollable_frame,text=docs_string,anchor="w")
         txt2.grid(row=self.row_index,column=1, sticky="w")
 
         combo_var = tk.StringVar(value="")  # Default is blank
@@ -118,6 +119,7 @@ class HandleActions():
         combobox.grid(row=self.row_index, column=2, sticky="we")
         doc_data = {}
         doc_data["selection"] = combo_var
+        doc_data["docs"] = doc_array
         doc_list.append(doc_data)
         combobox.bind("<MouseWheel>", self._dont_scroll)
         self.row_index+=1
@@ -138,7 +140,6 @@ class HandleActions():
             #municipality
 
             for path in paths:
-                print(path)
                 file_name = os.path.basename(path)
                 option_txt = municipality+" | "+file_name
                 ret_array.append(option_txt)
@@ -170,7 +171,7 @@ class HandleActions():
             self.gen_doc_dict(item,doc_to_generate)
 
         if self.main_gui_callback:
-            self.app.do_templates(doc_to_generate)
+            self.app.do_templates(doc_to_generate,self.main_gui_callback)
             self.main_gui_callback.auto_set_no_action_required()
             mb.showinfo("message","message")
 
@@ -180,5 +181,6 @@ class HandleActions():
             path = self.choice_lookup[choice]
             doc_dict = {}
             doc_dict["template_path"] = path
+            doc_dict["docs"] = item["docs"]
             list.append(doc_dict)
             #ADD THINGS TO INCLUDE IN TEMPLATE

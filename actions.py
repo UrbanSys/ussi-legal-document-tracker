@@ -102,6 +102,9 @@ class DocTrackerActions():
                         }
                         self.full_discharge_documents_to_generate.append(full_discharge_doc)
     
-    def do_templates(self, all_docs):
+    def do_templates(self, all_docs,prepared_callback=None):
         for doc in all_docs:
-            print(doc)
+            #Generate Document Here
+            if prepared_callback:
+                for item in doc["docs"]:
+                    prepared_callback.auto_set_prepared(item["doc_number"])
