@@ -68,7 +68,7 @@ class HandleActions():
             desc_string = ""
             for desc in desc_set:
                 desc_string = desc_string + desc + ", "
-            self.write_line(key,signer_docs,self.consent_doc_decisions,desc_string,self.full_discharges_templates)
+            self.write_line(key,signer_docs,self.consent_doc_decisions,desc_string,self.consents_templates)
 
         self.write_header("Partial Discharge Docs")   
         for item in partial_discharge_documents_to_generate:
@@ -78,7 +78,7 @@ class HandleActions():
         self.write_header("Full Discharge Docs")
         for item in full_discharge_documents_to_generate:
             doc_array = [{"doc_number": item["doc_number"]}]
-            self.write_line(item["company"],doc_array, self.full_doc_decisions,item["desc"],self.consents_templates)
+            self.write_line(item["company"],doc_array, self.full_doc_decisions,item["desc"],self.full_discharges_templates)
 
         self._bind_mousewheel_to_widgets(self.scrollable_frame)
 
@@ -169,10 +169,11 @@ class HandleActions():
 
     def do_templates(self):
         doc_to_generate = []
-
+        self.window.withdraw()
         should_continue = self.warn_if_incomplete_consents()
 
         if not should_continue:
+            self.window.deiconify()
             return
 
         for item in self.consent_doc_decisions:
@@ -187,7 +188,6 @@ class HandleActions():
         if self.main_gui_callback:
             self.app.do_templates(doc_to_generate,self.main_gui_callback)
             self.main_gui_callback.auto_set_no_action_required()
-            self.window.withdraw()
             mb.showinfo("Finished Template Generation","Finished Template Generation")
 
     def gen_doc_dict(self,item,list):
