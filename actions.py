@@ -102,12 +102,6 @@ class DocTrackerActions():
                         }
                         self.full_discharge_documents_to_generate.append(full_discharge_doc)
     
-    def do_templates(self, consent_docs,partial_docs,full_docs):
-        for item in consent_docs:
-            print(item["selection"].get())
-
-        for item in partial_docs:
-            print(item["selection"].get())
-
-        for item in full_docs:
-            print(item["selection"].get())
+    def do_templates(self, all_docs):
+        for doc in all_docs:
+            print(doc)

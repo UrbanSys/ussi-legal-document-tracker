@@ -15,6 +15,7 @@ class HandleActions():
         self.consent_doc_decisions = []
         self.partial_doc_decisions = []
         self.full_doc_decisions = []
+        self.choice_lookup = {}
 
     def generate_documents_gui(self, root):
         if self.window:
@@ -52,6 +53,11 @@ class HandleActions():
         consent_documents_to_generate = self.app.get_consent_documents_to_generate()
         partial_discharge_documents_to_generate  = self.app.get_partial_discharge_documents_to_generate()
         full_discharge_documents_to_generate  = self.app.get_full_discharge_documents_to_generate()
+
+        self.consent_doc_decisions = []
+        self.partial_doc_decisions = []
+        self.full_doc_decisions = []
+        self.choice_lookup = {}
         
         self.write_header("Consent Docs")
         for key in consent_documents_to_generate:
@@ -120,7 +126,7 @@ class HandleActions():
         grouped = {}
         for item in gui_choice:
             muni = item["municipality"]
-            file_name = os.path.basename(item["path"])
+            file_name = item["path"]
             grouped.setdefault(muni, []).append(file_name)
 
         self.selected_file = tk.StringVar()
@@ -132,8 +138,11 @@ class HandleActions():
             #municipality
 
             for path in paths:
+                print(path)
                 file_name = os.path.basename(path)
-                ret_array.append(municipality+" | "+file_name)
+                option_txt = municipality+" | "+file_name
+                ret_array.append(option_txt)
+                self.choice_lookup[option_txt] = path
         
         return ret_array
 
@@ -149,7 +158,27 @@ class HandleActions():
         self.app.set_docs_to_sign()
 
     def do_templates(self):
+        doc_to_generate = []
+
+        for item in self.consent_doc_decisions:
+            self.gen_doc_dict(item,doc_to_generate)
+
+        for item in self.partial_doc_decisions:
+            self.gen_doc_dict(item,doc_to_generate)
+
+        for item in self.full_doc_decisions:
+            self.gen_doc_dict(item,doc_to_generate)
+
         if self.main_gui_callback:
-            self.app.do_templates(self.consent_doc_decisions,self.partial_doc_decisions,self.full_doc_decisions)
+            self.app.do_templates(doc_to_generate)
             self.main_gui_callback.auto_set_no_action_required()
             mb.showinfo("message","message")
+
+    def gen_doc_dict(self,item,list):
+        choice = item["selection"].get()
+        if choice in self.choice_lookup:
+            path = self.choice_lookup[choice]
+            doc_dict = {}
+            doc_dict["template_path"] = path
+            list.append(doc_dict)
+            #ADD THINGS TO INCLUDE IN TEMPLATE
