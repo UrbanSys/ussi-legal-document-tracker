@@ -62,17 +62,23 @@ class HandleActions():
         self.write_header("Consent Docs")
         for key in consent_documents_to_generate:
             signer_docs = consent_documents_to_generate[key]
-            self.write_line(key,signer_docs,self.consent_doc_decisions,self.full_discharges_templates)
+            desc_set = set()
+            for doc in signer_docs:
+                desc_set.add(doc["desc"])
+            desc_string = ""
+            for desc in desc_set:
+                desc_string = desc_string + desc + ", "
+            self.write_line(key,signer_docs,self.consent_doc_decisions,desc_string,self.full_discharges_templates)
 
         self.write_header("Partial Discharge Docs")   
         for item in partial_discharge_documents_to_generate:
             doc_array = [{"doc_number": item["doc_number"]}]
-            self.write_line(item["company"],doc_array, self.partial_doc_decisions,self.partial_discharges_templates)
+            self.write_line(item["company"],doc_array, self.partial_doc_decisions,item["desc"],self.partial_discharges_templates)
 
         self.write_header("Full Discharge Docs")
         for item in full_discharge_documents_to_generate:
             doc_array = [{"doc_number": item["doc_number"]}]
-            self.write_line(item["company"],doc_array, self.full_doc_decisions,self.consents_templates)
+            self.write_line(item["company"],doc_array, self.full_doc_decisions,item["desc"],self.consents_templates)
 
         self._bind_mousewheel_to_widgets(self.scrollable_frame)
 
@@ -103,20 +109,23 @@ class HandleActions():
         self._on_mousewheel(event)
         return "break"
 
-    def write_line(self, company, doc_array, doc_list,options=None):
+    def write_line(self, company, doc_array, doc_list,desc="",options=None):
         txt = tk.Label(self.scrollable_frame,text=company,anchor="w")
         txt.grid(row=self.row_index,column=0, sticky="w")
         docs_string = ""
         for doc in doc_array:
             docs_string = docs_string + doc["doc_number"] + ", "
         txt2 = tk.Label(self.scrollable_frame,text=docs_string,anchor="w")
-        txt2.grid(row=self.row_index,column=1, sticky="w")
+        txt2.grid(row=self.row_index,column=2, sticky="w")
+
+        txtdesc = tk.Label(self.scrollable_frame,text=desc,anchor="w")
+        txtdesc.grid(row=self.row_index,column=1, sticky="w")
 
         combo_var = tk.StringVar(value="")  # Default is blank
         combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, state="readonly",width=90)
         if options:
             combobox['values'] = [""] + self.generate_gui_template_chooser(options)
-        combobox.grid(row=self.row_index, column=2, sticky="we")
+        combobox.grid(row=self.row_index, column=3, sticky="we")
         doc_data = {}
         doc_data["selection"] = combo_var
         doc_data["docs"] = doc_array

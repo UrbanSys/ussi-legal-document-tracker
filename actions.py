@@ -80,7 +80,8 @@ class DocTrackerActions():
                         if signer != '':
                             consent_doc = {
                                 "company": signer,
-                                "doc_number": doc["Document #"]
+                                "doc_number": doc["Document #"],
+                                "desc": doc["Description"]
                             }
                             if signer not in self.consent_documents_to_generate:
                                 self.consent_documents_to_generate[signer] = []
@@ -91,7 +92,8 @@ class DocTrackerActions():
                         if signer != '':
                             partial_discharge_doc = {
                                 "company": signer,
-                                "doc_number": doc["Document #"]
+                                "doc_number": doc["Document #"],
+                                "desc": doc["Description"]
                             }
                             self.partial_discharge_documents_to_generate.append(partial_discharge_doc)
             if doc["Action"]=="Full Discharge":
@@ -100,7 +102,8 @@ class DocTrackerActions():
                         if signer != '':
                             full_discharge_doc = {
                                 "company": signer,
-                                "doc_number": doc["Document #"]
+                                "doc_number": doc["Document #"],
+                                "desc": doc["Description"]
                             }
                             self.full_discharge_documents_to_generate.append(full_discharge_doc)
     
