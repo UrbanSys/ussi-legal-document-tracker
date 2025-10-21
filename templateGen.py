@@ -77,3 +77,15 @@ def generate_consent_wseal(path, corp, plantype, surveyor, filenumber, legal,out
     doc_find_and_replace(doc,r"%PLANTYPE%",plantype)
 
     doc.save(out)
+
+def generate_general_doc(path, out, corp, plantype, surveyor, filenumber, legal,docnumber):
+    doc = docx.Document(path)
+
+    doc_find_and_replace(doc,r"%SURVEYOR%",surveyor)
+    doc_find_and_replace(doc,r"%CORPORATION%",corp)
+    doc_find_and_replace(doc,r"%FILENUMBER%",filenumber)
+    doc_find_and_replace(doc,r"%LEGAL%",legal)
+    doc_find_and_replace(doc,r"%PLANTYPE%",plantype)
+    doc_find_and_replace(doc,r"%DOCNUMBER%",docnumber)
+
+    doc.save(out)

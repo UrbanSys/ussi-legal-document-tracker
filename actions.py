@@ -8,6 +8,7 @@ interchanged as needed, and all that needs to be done is have the UI point to th
 from data import DataStorage
 from utils import *
 from pypdf import PdfReader
+from templateGen import *
 
 class DocTrackerActions():
     def __init__(self):
@@ -16,6 +17,9 @@ class DocTrackerActions():
         self.consent_documents_to_generate = {}
         self.partial_discharge_documents_to_generate = []
         self.full_discharge_documents_to_generate = []
+        self.surveyor = "---"
+        self.fileno = "0000.0000.00"
+        self.legal_desc = "n/a"
 
     def get_existing_inst_col_order(self):
         return ["Item","Document #", "Description","Signatories","Action","Circulation Notes","Status"]
@@ -110,7 +114,16 @@ class DocTrackerActions():
     
     def do_templates(self, all_docs,prepared_callback=None):
         for doc in all_docs:
-            #Generate Document Here
-            if prepared_callback:
-                for item in doc["docs"]:
+            file_path = doc["template_path"]
+            signer = doc["signer"]
+            docnumber = ""
+            for item in doc["docs"]:
+                docnumber = docnumber + item["doc_number"] + ", "
+            output_filename = "%s %s - test.docx"%(signer,docnumber)
+            if len(doc["docs"])>1:
+                docnumber = docnumber[:-2]
+                output_filename = "%s - test.docx"%(signer)
+            generate_general_doc(file_path, output_filename, signer, "Subdivision", self.surveyor, self.fileno, self.legal_desc,docnumber)
+            for item in doc["docs"]:   
+                if prepared_callback:
                     prepared_callback.auto_set_prepared(item["doc_number"])

@@ -197,6 +197,7 @@ class HandleActions():
             doc_dict = {}
             doc_dict["template_path"] = path
             doc_dict["docs"] = item["docs"]
+            doc_dict["signer"] = item["docs"][1]["company"]
             list.append(doc_dict)
             #ADD THINGS TO INCLUDE IN TEMPLATE
 
