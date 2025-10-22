@@ -10,6 +10,7 @@ class DataStorage():
         self.instruments_on_title = []
         self.instrument_count_on_title = 0
         self.app_state = {}
+        self.legal_description = ""
 
     def get_instruments_on_title(self):
         return self.instruments_on_title
@@ -28,3 +29,9 @@ class DataStorage():
     
     def set_app_state(self,data):
         self.app_state = data
+
+    def get_legal_description(self):
+        return self.legal_description
+    
+    def set_legal_description(self,legal_desc):
+        self.legal_description = legal_desc

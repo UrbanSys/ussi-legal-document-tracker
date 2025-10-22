@@ -19,7 +19,6 @@ class DocTrackerActions():
         self.full_discharge_documents_to_generate = []
         self.surveyor = "---"
         self.fileno = "0000.0000.00"
-        self.legal_desc = ""
         self.plantype = ""
 
     def get_existing_inst_col_order(self):
@@ -45,6 +44,7 @@ class DocTrackerActions():
         processed_title_cert = process_title_cert(reader)
         self.data.set_instruments_on_title(processed_title_cert["inst_on_title"])
         self.data.set_loaded_insts_on_title(processed_title_cert["inst_count_in_title"])
+        self.data.set_legal_description(processed_title_cert["legal_desc"])
 
     def get_app_state(self):
         return self.data.get_app_state()
@@ -67,6 +67,12 @@ class DocTrackerActions():
 
     def get_full_discharge_documents_to_generate(self):
         return self.full_discharge_documents_to_generate
+
+    def get_legal_description(self):
+        return self.data.get_legal_description()
+    
+    def set_legal_description(self,legal_desc):
+        self.data.set_legal_description(legal_desc)
 
     def set_docs_to_sign(self):
         app_state = self.get_app_state()
@@ -119,19 +125,14 @@ class DocTrackerActions():
     def set_fileno(self, fileno):
         self.fileno = fileno
 
-    def set_legal_desc(self, legal_desc):
-        self.legal_desc = legal_desc
-
     def set_plantype(self, plantype):
         self.plantype = plantype
 
-    def set_survey_info(self, surveyor=None, fileno=None, legal_desc=None, plantype=None):
+    def set_survey_info(self, surveyor=None, fileno=None, plantype=None):
         if surveyor is not None:
             self.surveyor = surveyor
         if fileno is not None:
             self.fileno = fileno
-        if legal_desc is not None:
-            self.legal_desc = legal_desc
         if plantype is not None:
             self.plantype = plantype
     
@@ -146,7 +147,7 @@ class DocTrackerActions():
             if len(doc["docs"])>1:
                 docnumber = docnumber[:-2]
                 output_filename = "%s - test.docx"%(signer)
-            generate_general_doc(file_path, output_filename, signer, "Subdivision", self.surveyor, self.fileno, self.legal_desc,docnumber)
+            generate_general_doc(file_path, output_filename, signer, self.plantype, self.surveyor, self.fileno, self.data.get_legal_description(),docnumber)
             for item in doc["docs"]:   
                 if prepared_callback:
                     prepared_callback.auto_set_prepared(item["doc_number"])

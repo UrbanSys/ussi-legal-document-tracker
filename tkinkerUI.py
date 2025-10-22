@@ -399,7 +399,8 @@ class tkinterUI(tk.Tk):
         ui_state = {
             "existing_encumbrances_on_title": [],
             "new_agreements": [],
-            "plans": {}
+            "plans": {},
+            "legal_desc": ""
         }
 
         # Header
@@ -408,6 +409,8 @@ class tkinterUI(tk.Tk):
             "program_version" : __VERSION_TEXT__,
             "file_version" : __FILE_VERSION__,
         }
+
+        ui_state["legal_desc"] = self.app.get_legal_description()
 
         # Get Existing Encumbrances
         for row in self.ui_insts_on_title:
@@ -473,6 +476,8 @@ class tkinterUI(tk.Tk):
         self.ui_new_plans.clear()
         self.ui_new_plans_label.clear()
         self.ui_new_plans_header.clear()
+
+        self.app.set_legal_description(data["legal_desc"])
 
         # Repopulate existing encumbrances
         for enc in data.get("existing_encumbrances_on_title", []):

@@ -212,7 +212,7 @@ class HandleActions():
             self.gen_doc_dict(item,doc_to_generate)
 
         if self.main_gui_callback:
-            self.app.set_survey_info(self.surveyor_value.get(),self.fileno_input.get(),"n/a",self.plantype_input.get())
+            self.app.set_survey_info(self.surveyor_value.get(),self.fileno_input.get(),self.plantype_input.get())
             self.app.do_templates(doc_to_generate,self.main_gui_callback)
             self.main_gui_callback.auto_set_no_action_required()
             mb.showinfo("Finished Template Generation","Finished Template Generation")
