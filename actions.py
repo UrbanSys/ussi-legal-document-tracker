@@ -137,17 +137,31 @@ class DocTrackerActions():
             self.plantype = plantype
     
     def do_templates(self, all_docs,prepared_callback=None):
+        successful_documents = 0
+        failed_documents = 0
         for doc in all_docs:
-            file_path = doc["template_path"]
-            signer = doc["signer"]
-            docnumber = ""
-            for item in doc["docs"]:
-                docnumber = docnumber + item["doc_number"] + ", "
-            output_filename = "%s %s - test.docx"%(signer,docnumber)
-            if len(doc["docs"])>1:
-                docnumber = docnumber[:-2]
-                output_filename = "%s - test.docx"%(signer)
-            generate_general_doc(file_path, output_filename, signer, self.plantype, self.surveyor, self.fileno, self.data.get_legal_description(),docnumber)
-            for item in doc["docs"]:   
+            try:
+                file_path = doc["template_path"]
+                signer = doc["signer"]
+                docnumber = ""
+                for item in doc["docs"]:
+                    docnumber = docnumber + item["doc_number"] + ", "
+                output_filename = "%s %s - test.docx"%(signer,docnumber)
+                if len(doc["docs"])>1:
+                    docnumber = docnumber[:-2]
+                    output_filename = "%s - test.docx"%(signer)
+                generate_general_doc(file_path, output_filename, signer, self.plantype, self.surveyor, self.fileno, self.data.get_legal_description(),docnumber)
+                
+                successful_documents +=1
+                for item in doc["docs"]:   
+                    if prepared_callback:
+                        prepared_callback.auto_set_prepared(item["doc_number"])
+            except Exception as e:
+                print(e)
+                failed_documents+=1
                 if prepared_callback:
-                    prepared_callback.auto_set_prepared(item["doc_number"])
+                    prepared_callback.callback_alert(e)
+
+        if prepared_callback:
+            if failed_documents>0:
+                prepared_callback.callback_alert("There was errors with generating %i documents"%failed_documents)

@@ -529,6 +529,9 @@ class tkinterUI(tk.Tk):
 
         self.regrid_rows()
 
+    def callback_alert(self,message):
+        mb.showwarning("Warning",message)
+
 
 
 if __name__ == "__main__":
