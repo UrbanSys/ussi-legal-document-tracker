@@ -8,10 +8,18 @@ interchanged as needed, and all that needs to be done is have the UI point to th
 from data import DataStorage
 from utils import *
 from pypdf import PdfReader
+from templateGen import *
 
 class DocTrackerActions():
     def __init__(self):
         self.data = DataStorage()
+        # The following things below don't really matter to keep persistant (data.py is more so the persistant storage and basic app state)
+        self.consent_documents_to_generate = {}
+        self.partial_discharge_documents_to_generate = []
+        self.full_discharge_documents_to_generate = []
+        self.surveyor = "---"
+        self.fileno = "0000.0000.00"
+        self.plantype = ""
 
     def get_existing_inst_col_order(self):
         return ["Item","Document #", "Description","Signatories","Action","Circulation Notes","Status"]
@@ -36,9 +44,124 @@ class DocTrackerActions():
         processed_title_cert = process_title_cert(reader)
         self.data.set_instruments_on_title(processed_title_cert["inst_on_title"])
         self.data.set_loaded_insts_on_title(processed_title_cert["inst_count_in_title"])
+        self.data.set_legal_description(processed_title_cert["legal_desc"])
 
     def get_app_state(self):
         return self.data.get_app_state()
     
     def set_app_state(self,data):
         self.data.set_app_state(data)
+
+    def has_docs_to_generate(self):
+        total_len = len(self.consent_documents_to_generate)+len(self.partial_discharge_documents_to_generate)+len(self.full_discharge_documents_to_generate)
+        if total_len == 0:
+            return True
+        else:
+            return False
+
+    def get_consent_documents_to_generate(self):
+        return self.consent_documents_to_generate
+
+    def get_partial_discharge_documents_to_generate(self):
+        return self.partial_discharge_documents_to_generate
+
+    def get_full_discharge_documents_to_generate(self):
+        return self.full_discharge_documents_to_generate
+
+    def get_legal_description(self):
+        return self.data.get_legal_description()
+    
+    def set_legal_description(self,legal_desc):
+        self.data.set_legal_description(legal_desc)
+
+    def set_docs_to_sign(self):
+        app_state = self.get_app_state()
+        self.consent_documents_to_generate = {}
+        self.partial_discharge_documents_to_generate = []
+        self.full_discharge_documents_to_generate = []
+
+        existing_enc_on_title = app_state["existing_encumbrances_on_title"]
+
+        for doc in existing_enc_on_title:
+            signatories = doc["Signatories"].lower()
+            sign_split = signatories.split("\n")
+            if doc["Action"]=="Consent":
+                if doc["Status"]=="---":
+                    for signer in sign_split:
+                        if signer != '':
+                            consent_doc = {
+                                "company": signer,
+                                "doc_number": doc["Document #"],
+                                "desc": doc["Description"],
+                                "consent_id": f"{doc['Document #']}|{doc['Description']}"
+                            }
+                            if signer not in self.consent_documents_to_generate:
+                                self.consent_documents_to_generate[signer] = []
+                            self.consent_documents_to_generate[signer].append(consent_doc)
+            if doc["Action"]=="Partial Discharge":
+                if doc["Status"]=="---":
+                    for signer in sign_split:
+                        if signer != '':
+                            partial_discharge_doc = {
+                                "company": signer,
+                                "doc_number": doc["Document #"],
+                                "desc": doc["Description"]
+                            }
+                            self.partial_discharge_documents_to_generate.append(partial_discharge_doc)
+            if doc["Action"]=="Full Discharge":
+                if doc["Status"]=="---":
+                    for signer in sign_split:
+                        if signer != '':
+                            full_discharge_doc = {
+                                "company": signer,
+                                "doc_number": doc["Document #"],
+                                "desc": doc["Description"]
+                            }
+                            self.full_discharge_documents_to_generate.append(full_discharge_doc)
+
+    def set_surveyor(self, surveyor):
+        self.surveyor = surveyor
+
+    def set_fileno(self, fileno):
+        self.fileno = fileno
+
+    def set_plantype(self, plantype):
+        self.plantype = plantype
+
+    def set_survey_info(self, surveyor=None, fileno=None, plantype=None):
+        if surveyor is not None:
+            self.surveyor = surveyor
+        if fileno is not None:
+            self.fileno = fileno
+        if plantype is not None:
+            self.plantype = plantype
+    
+    def do_templates(self, all_docs,prepared_callback=None):
+        successful_documents = 0
+        failed_documents = 0
+        for doc in all_docs:
+            try:
+                file_path = doc["template_path"]
+                signer = doc["signer"]
+                docnumber = ""
+                for item in doc["docs"]:
+                    docnumber = docnumber + item["doc_number"] + ", "
+                output_filename = "%s %s - test.docx"%(signer,docnumber)
+                if len(doc["docs"])>1:
+                    docnumber = docnumber[:-2]
+                    output_filename = "%s - test.docx"%(signer)
+                generate_general_doc(file_path, output_filename, signer, self.plantype, self.surveyor, self.fileno, self.data.get_legal_description(),docnumber)
+                
+                successful_documents +=1
+                for item in doc["docs"]:   
+                    if prepared_callback:
+                        prepared_callback.auto_set_prepared(item["doc_number"])
+            except Exception as e:
+                print(e)
+                failed_documents+=1
+                if prepared_callback:
+                    prepared_callback.callback_alert(e)
+
+        if prepared_callback:
+            if failed_documents>0:
+                prepared_callback.callback_alert("There was errors with generating %i documents"%failed_documents)

@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
+from docsignview import HandleActions
 from tkinter import filedialog as fd
 
 try:
@@ -35,6 +36,7 @@ class tkinterUI(tk.Tk):
         self.geometry("1000x600")
 
         self.app = DocTrackerActions()
+        self.docview = HandleActions(self.app,self)
 
         #Main view
         canvas = tk.Canvas(main_view)
@@ -44,7 +46,8 @@ class tkinterUI(tk.Tk):
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
-        canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", self._on_mousewheel))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.pack(side="left", fill="both", expand=True)
@@ -93,8 +96,10 @@ class tkinterUI(tk.Tk):
         button.grid(row=0, column=1)
         button = tk.Button(bottom_view,text="Load",command=self.load_tracker)
         button.grid(row=0, column=2)
-        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button = tk.Button(bottom_view,text="Generate Documents from Templates",command=self.gen_docs)
         button.grid(row=0, column=3)
+        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button.grid(row=0, column=4)
 
         self.regrid_rows()
 
@@ -106,18 +111,72 @@ class tkinterUI(tk.Tk):
     def _dont_scroll(self,event):
         self._on_mousewheel(event)
         return "break"
+    
+    def _bind_mousewheel_to_widgets(self, widget):
+        widget.bind("<Enter>", lambda e: widget.bind_all("<MouseWheel>", self._on_mousewheel))
+        widget.bind("<Leave>", lambda e: widget.unbind_all("<MouseWheel>"))
+        if isinstance(widget, (tk.Frame, tk.LabelFrame, tk.Toplevel, tk.Canvas)):
+            for child in widget.winfo_children():
+                self._bind_mousewheel_to_widgets(child)
+
+    
+    def format_rows(self):
+        for row_widgets in self.ui_insts_on_title:
+            for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
+                if col in row_widgets:
+                    if row_widgets[col].winfo_class()=="Entry":
+                        status = row_widgets["Status_Val"].get()
+                        if status=="Prepared":
+                            row_widgets[col].config(bg="lightgreen")
+                        elif status=="Complete" or status=="No Action Required":
+                            row_widgets[col].config(bg="gray")
+                        elif status=="Client for Execution":
+                            row_widgets[col].config(bg="#fff1c9")
+                        else:
+                            row_widgets[col].config(bg="white")
+        for row_widgets in self.ui_new_agreements:
+            for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
+                if col in row_widgets:
+                    if row_widgets[col].winfo_class()=="Entry":
+                        status = row_widgets["Status_Val"].get()
+                        if status=="Prepared":
+                            row_widgets[col].config(bg="lightgreen")
+                        elif status=="Complete" or status=="No Action Required":
+                            row_widgets[col].config(bg="gray")
+                        elif status=="Client for Execution":
+                            row_widgets[col].config(bg="#fff1c9")
+                        else:
+                            row_widgets[col].config(bg="white")
+
+        for plan_key in self.ui_new_plans:
+            for row_widgets in self.ui_new_plans[plan_key]:
+                for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
+                    if col in row_widgets:
+                        if row_widgets[col].winfo_class()=="Entry":
+                            status = row_widgets["Status_Val"].get()
+                            if status=="Prepared":
+                                row_widgets[col].config(bg="lightgreen")
+                            elif status=="Complete" or status=="No Action Required":
+                                row_widgets[col].config(bg="gray")
+                            elif status=="Client for Execution":
+                                row_widgets[col].config(bg="#fff1c9")
+                            else:
+                                row_widgets[col].config(bg="white")
 
     def regrid_rows(self):
+        for widget in self.scrollable_frame.winfo_children():
+            widget.grid_forget()
+
         rid = 0
         self.ui_insts_on_title_label.grid(row=rid, column=0, columnspan=5, sticky="w")
         rid+=1
         for i, col_widgets in enumerate(self.ui_insts_on_title_header, start=1):
             col_widgets.grid(row=rid, column=i)
         rid+=1
-        for i, row_widgets in enumerate(self.ui_insts_on_title, start=rid):
+        for row_widgets in self.ui_insts_on_title:
             for j, col in enumerate(self.app.get_existing_inst_col_order(),start=1):
                 if col in row_widgets:
-                    row_widgets[col].grid(row=i, column=j)
+                    row_widgets[col].grid(row=rid, column=j)
             rid  +=1
 
         for plan_key in self.ui_new_plans:
@@ -126,10 +185,10 @@ class tkinterUI(tk.Tk):
             for i, col_widgets in enumerate(self.ui_new_plans_header[plan_key], start=1):
                 col_widgets.grid(row=rid, column=i)
             rid+=1
-            for i, row_widgets in enumerate(self.ui_new_plans[plan_key], start=rid):
+            for row_widgets in self.ui_new_plans[plan_key]:
                 for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
                     if col in row_widgets:
-                        row_widgets[col].grid(row=i, column=j)
+                        row_widgets[col].grid(row=rid, column=j)
                 rid  +=1
 
         self.ui_new_agreements_label.grid(row=rid, column=0, columnspan=5, sticky="w")
@@ -137,16 +196,40 @@ class tkinterUI(tk.Tk):
         for i, col_widgets in enumerate(self.ui_new_agreements_header, start=1):
             col_widgets.grid(row=rid, column=i)
         rid+=1
-        for i, row_widgets in enumerate(self.ui_new_agreements, start=rid):
+        for row_widgets in self.ui_new_agreements:
             for j, col in enumerate(self.app.get_new_agreements_col_order(),start=1):
                 if col in row_widgets:
-                    row_widgets[col].grid(row=i, column=j)
+                    row_widgets[col].grid(row=rid, column=j)
             rid  +=1
         self.app.set_app_state(self.get_ui_state())
 
+        self.format_rows()
+        self._bind_mousewheel_to_widgets(self.scrollable_frame)
+
+    def auto_set_no_action_required(self):
+        for row_widgets in self.ui_insts_on_title:
+            status = row_widgets["Action_Val"].get()
+            if status == "No Action Required":
+                row_widgets["Status_Val"].set("No Action Required")
+        self.regrid_rows()
+
+    def auto_set_prepared(self,prepared_documents):
+        for row_widgets in self.ui_insts_on_title:
+            doc_number = row_widgets["Document #"].get()
+            if doc_number == prepared_documents:
+                row_widgets["Status_Val"].set("Prepared")
+        self.regrid_rows()
 
     def dummy(self):
         mb.showinfo("message","message")
+
+    def gen_docs(self):
+        self.app.set_app_state(self.get_ui_state())
+        self.docview.determine_documents_to_sign()
+        if not self.docview.is_view_empty():
+            self.docview.generate_documents_gui(self)
+        else:
+            mb.showerror("No actions set!", "No actions are currently set. Please choose actions in order to generate legal documents.")
 
     def load_instruments_on_title(self):
         filepath = fd.askopenfilename(
@@ -190,7 +273,7 @@ class tkinterUI(tk.Tk):
                 program_version = header["program_version"]
                 if program_name==__PROGRAM_NAME__:
                     if file_version >= __FILE_MIN_VERSION__ and file_version <= __FILE_VERSION__:
-                        print("Header is correct, loading file as normal")
+                        print("Version of program from file: %s"%program_version)
                     else:
                         mb.showerror("Unable to open file", f"There was an error reading the file {file_path}.\nInvalid version number! File is {file_version}, should be between {__FILE_MIN_VERSION__}, {__FILE_VERSION__}\nPlease track down a compatible version of this program, such as \n{program_version}")
                         return
@@ -245,7 +328,7 @@ class tkinterUI(tk.Tk):
         return ["Item","Document/Desc", "Copies/Dept","Signatories","Condition of Approval","Circulation Notes","Status"]
         """
         row = {}
-        row["Item"]=tk.Label(self.scrollable_frame,text="%i"%(len(self.ui_new_agreements)+1))
+        row["Item"]=tk.Label(self.scrollable_frame,text="%i"%(len(plan)+1))
         row["Document/Desc"]=tk.Entry(self.scrollable_frame,width=25)
         row["Document/Desc"].insert(0, doc_desc)
         row["Copies/Dept"]=tk.Entry(self.scrollable_frame,width=25)
@@ -304,11 +387,20 @@ class tkinterUI(tk.Tk):
         location[name]['values']=items
         location[name].set(items[0])
 
+        def selection_changed(event):
+            """
+            This function is called when the combobox selection changes.
+            """
+            self.format_rows()
+
+        location[name].bind("<<ComboboxSelected>>", selection_changed)
+
     def get_ui_state(self):
         ui_state = {
             "existing_encumbrances_on_title": [],
             "new_agreements": [],
-            "plans": {}
+            "plans": {},
+            "legal_desc": ""
         }
 
         # Header
@@ -317,6 +409,8 @@ class tkinterUI(tk.Tk):
             "program_version" : __VERSION_TEXT__,
             "file_version" : __FILE_VERSION__,
         }
+
+        ui_state["legal_desc"] = self.app.get_legal_description()
 
         # Get Existing Encumbrances
         for row in self.ui_insts_on_title:
@@ -383,6 +477,8 @@ class tkinterUI(tk.Tk):
         self.ui_new_plans_label.clear()
         self.ui_new_plans_header.clear()
 
+        self.app.set_legal_description(data["legal_desc"])
+
         # Repopulate existing encumbrances
         for enc in data.get("existing_encumbrances_on_title", []):
             self.add_row_ex_enc(
@@ -432,6 +528,9 @@ class tkinterUI(tk.Tk):
                         row[f"{col}_Val"].set(row_data.get(col, ""))
 
         self.regrid_rows()
+
+    def callback_alert(self,message):
+        mb.showwarning("Warning",message)
 
 
 
