@@ -5,6 +5,8 @@ from utils import *
 from tkinter import messagebox as mb
 
 DEFAULT_CONFIG = "Z:/Urban Survey/Calgary/Automation/discharge_consent_config.txt"
+SURVEYORS = ["Meredith Bryan", "James Durant", "Cathy Wilson"]
+INPUT_WIDTH = 100
 
 class HandleActions():
     def __init__(self,app=None,main_gui_callback = None):
@@ -16,6 +18,10 @@ class HandleActions():
         self.partial_doc_decisions = []
         self.full_doc_decisions = []
         self.choice_lookup = {}
+
+        self.surveyor_value = tk.StringVar(value="")
+        self.fileno_input = None
+        self.plantype_input = None
 
     def generate_documents_gui(self, root):
         if self.window:
@@ -80,6 +86,26 @@ class HandleActions():
             doc_array = [{"doc_number": item["doc_number"]}]
             self.write_line(item["company"],doc_array, self.full_doc_decisions,item["desc"],self.full_discharges_templates)
 
+        self.write_header("Template Information")   
+        surveyor_label = tk.Label(self.scrollable_frame,text="Surveyor",anchor="w")
+        surveyor_label.grid(row=self.row_index,column=0, sticky="w")
+        surveyor_combobox = ttk.Combobox(self.scrollable_frame, textvariable=self.surveyor_value,width=INPUT_WIDTH)
+        surveyor_combobox['values'] = SURVEYORS
+        surveyor_combobox.grid(row=self.row_index, column=3, sticky="we")
+        self.row_index+=1
+
+        file_label = tk.Label(self.scrollable_frame,text="File Number",anchor="w")
+        file_label.grid(row=self.row_index,column=0, sticky="w")
+        self.fileno_input = tk.Entry(self.scrollable_frame,width=INPUT_WIDTH)
+        self.fileno_input.grid(row=self.row_index, column=3, sticky="we")
+        self.row_index+=1
+
+        plantype_label = tk.Label(self.scrollable_frame,text="Plan Type",anchor="w")
+        plantype_label.grid(row=self.row_index,column=0, sticky="w")
+        self.plantype_input = tk.Entry(self.scrollable_frame,width=INPUT_WIDTH)
+        self.plantype_input.grid(row=self.row_index, column=3, sticky="we")
+        self.row_index+=1
+
         self._bind_mousewheel_to_widgets(self.scrollable_frame)
 
         button = tk.Button(bottom_view,text="Generate Templates",command=self.do_templates)
@@ -122,7 +148,7 @@ class HandleActions():
         txtdesc.grid(row=self.row_index,column=1, sticky="w")
 
         combo_var = tk.StringVar(value="")  # Default is blank
-        combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, state="readonly",width=90)
+        combobox = ttk.Combobox(self.scrollable_frame, textvariable=combo_var, state="readonly",width=INPUT_WIDTH)
         if options:
             combobox['values'] = [""] + self.generate_gui_template_chooser(options)
         combobox.grid(row=self.row_index, column=3, sticky="we")
@@ -186,6 +212,7 @@ class HandleActions():
             self.gen_doc_dict(item,doc_to_generate)
 
         if self.main_gui_callback:
+            self.app.set_survey_info(self.surveyor_value.get(),self.fileno_input.get(),"n/a",self.plantype_input.get())
             self.app.do_templates(doc_to_generate,self.main_gui_callback)
             self.main_gui_callback.auto_set_no_action_required()
             mb.showinfo("Finished Template Generation","Finished Template Generation")
@@ -197,7 +224,7 @@ class HandleActions():
             doc_dict = {}
             doc_dict["template_path"] = path
             doc_dict["docs"] = item["docs"]
-            doc_dict["signer"] = item["docs"][1]["company"]
+            doc_dict["signer"] = item["docs"][0]["company"]
             list.append(doc_dict)
             #ADD THINGS TO INCLUDE IN TEMPLATE
 

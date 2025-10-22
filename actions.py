@@ -19,7 +19,8 @@ class DocTrackerActions():
         self.full_discharge_documents_to_generate = []
         self.surveyor = "---"
         self.fileno = "0000.0000.00"
-        self.legal_desc = "n/a"
+        self.legal_desc = ""
+        self.plantype = ""
 
     def get_existing_inst_col_order(self):
         return ["Item","Document #", "Description","Signatories","Action","Circulation Notes","Status"]
@@ -111,6 +112,28 @@ class DocTrackerActions():
                                 "desc": doc["Description"]
                             }
                             self.full_discharge_documents_to_generate.append(full_discharge_doc)
+
+    def set_surveyor(self, surveyor):
+        self.surveyor = surveyor
+
+    def set_fileno(self, fileno):
+        self.fileno = fileno
+
+    def set_legal_desc(self, legal_desc):
+        self.legal_desc = legal_desc
+
+    def set_plantype(self, plantype):
+        self.plantype = plantype
+
+    def set_survey_info(self, surveyor=None, fileno=None, legal_desc=None, plantype=None):
+        if surveyor is not None:
+            self.surveyor = surveyor
+        if fileno is not None:
+            self.fileno = fileno
+        if legal_desc is not None:
+            self.legal_desc = legal_desc
+        if plantype is not None:
+            self.plantype = plantype
     
     def do_templates(self, all_docs,prepared_callback=None):
         for doc in all_docs:
