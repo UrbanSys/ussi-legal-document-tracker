@@ -169,6 +169,10 @@ class tkinterUI(tk.Tk):
 
         rid = 0
         self.ui_insts_on_title_label.grid(row=rid, column=0, columnspan=5, sticky="w")
+        btn_add = tk.Button(self.scrollable_frame, text="+", command=lambda: [self.add_row_ex_enc(), self.regrid_rows()])
+        btn_add.grid(row=rid, column=9, sticky="w")
+        btn_remove = tk.Button(self.scrollable_frame, text="−", command=lambda: [self.remove_row_ex_enc()])
+        btn_remove.grid(row=rid, column=10, sticky="w")
         rid+=1
         for i, col_widgets in enumerate(self.ui_insts_on_title_header, start=1):
             col_widgets.grid(row=rid, column=i)
@@ -181,6 +185,10 @@ class tkinterUI(tk.Tk):
 
         for plan_key in self.ui_new_plans:
             self.ui_new_plans_label[plan_key].grid(row=rid, column=0, columnspan=5, sticky="w")
+            btn_add = tk.Button(self.scrollable_frame, text="+", command=lambda key=plan_key: [self.add_row_plan(self.ui_new_plans[key]), self.regrid_rows()])
+            btn_add.grid(row=rid, column=9, sticky="w")
+            btn_remove = tk.Button(self.scrollable_frame, text="−", command=lambda key=plan_key: [self.remove_row_plan(key)])
+            btn_remove.grid(row=rid, column=10, sticky="w")
             rid+=1
             for i, col_widgets in enumerate(self.ui_new_plans_header[plan_key], start=1):
                 col_widgets.grid(row=rid, column=i)
@@ -192,6 +200,10 @@ class tkinterUI(tk.Tk):
                 rid  +=1
 
         self.ui_new_agreements_label.grid(row=rid, column=0, columnspan=5, sticky="w")
+        btn_add = tk.Button(self.scrollable_frame, text="+", command=lambda: [self.add_row_new_agreement(), self.regrid_rows()])
+        btn_add.grid(row=rid, column=9, sticky="w")
+        btn_remove = tk.Button(self.scrollable_frame, text="−", command=lambda: [self.remove_row_new_agreement()])
+        btn_remove.grid(row=rid, column=10, sticky="w")
         rid+=1
         for i, col_widgets in enumerate(self.ui_new_agreements_header, start=1):
             col_widgets.grid(row=rid, column=i)
@@ -532,7 +544,29 @@ class tkinterUI(tk.Tk):
     def callback_alert(self,message):
         mb.showwarning("Warning",message)
 
+    def remove_row_ex_enc(self):
+        if self.ui_insts_on_title:
+            row = self.ui_insts_on_title.pop()
+            for widget in row.values():
+                if hasattr(widget, "destroy"):
+                    widget.destroy()
+            self.regrid_rows()
 
+    def remove_row_new_agreement(self):
+        if self.ui_new_agreements:
+            row = self.ui_new_agreements.pop()
+            for widget in row.values():
+                if hasattr(widget, "destroy"):
+                    widget.destroy()
+            self.regrid_rows()
+
+    def remove_row_plan(self, plan_name):
+        if plan_name in self.ui_new_plans and self.ui_new_plans[plan_name]:
+            row = self.ui_new_plans[plan_name].pop()
+            for widget in row.values():
+                if hasattr(widget, "destroy"):
+                    widget.destroy()
+            self.regrid_rows()
 
 if __name__ == "__main__":
     app = tkinterUI()
