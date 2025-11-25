@@ -1,0 +1,153 @@
+:root {
+  color-scheme: light;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 2rem clamp(1rem, 4vw, 4rem);
+  background: linear-gradient(180deg, #f4f7fb 0%, #eef2ff 100%);
+  color: #0f172a;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid #d9e2f5;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 25px 80px rgba(15, 23, 42, 0.08);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: #64748b;
+  margin-bottom: 0.3rem;
+}
+
+.app-header h1 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  margin: 0;
+}
+
+.subhead {
+  color: #475467;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+}
+
+.header-meta {
+  min-width: 240px;
+  flex: 1;
+}
+
+.field span {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: #475467;
+}
+
+.field textarea {
+  width: 100%;
+  min-height: 80px;
+  font-size: 0.95rem;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5f5;
+  padding: 0.75rem;
+  resize: vertical;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid #d9e2f5;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.06);
+}
+
+.toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.3rem;
+  font-weight: 600;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.toolbar button:nth-child(2) {
+  background: #0ea5e9;
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.25);
+}
+
+.toolbar button:nth-child(3) {
+  background: #16a34a;
+  box-shadow: 0 10px 20px rgba(22, 163, 74, 0.25);
+}
+
+.toolbar button:nth-child(4) {
+  background: #f97316;
+  box-shadow: 0 10px 20px rgba(249, 115, 22, 0.25);
+}
+
+.status-line {
+  font-size: 0.9rem;
+  color: #475467;
+}
+
+.plan-section {
+  margin-bottom: 3rem;
+}
+
+.plan-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.plan-new {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.plan-new input {
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  padding: 0.6rem 1rem;
+  min-width: 200px;
+}
