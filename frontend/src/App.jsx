@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import EncumbranceTable from "./components/EncumbranceTable.jsx";
 import AgreementsTable from "./components/AgreementsTable.jsx";
 import PlanSection from "./components/PlanSection.jsx";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
 import {
   fetchTracker,
   saveTracker,
@@ -33,10 +35,12 @@ const PROGRAM_METADATA = {
   file_version: 1,
 };
 
+
+
 const uniqueId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random()}`;
+? crypto.randomUUID()
+: `${Date.now()}-${Math.random()}`;
 
 const createEncumbranceRow = () => ({
   id: uniqueId(),
@@ -79,13 +83,13 @@ const buildDefaultTracker = () => ({
   legal_desc: "",
   existing_encumbrances_on_title: Array.from({ length: 3 }, () =>
     createEncumbranceRow(),
-  ),
-  new_agreements: [createAgreementRow()],
-  plans: {
-    SUB1: seedPlanRows(),
-    URW1: seedPlanRows(),
-    ODRW1: seedPlanRows(),
-  },
+),
+new_agreements: [createAgreementRow()],
+plans: {
+  SUB1: seedPlanRows(),
+  URW1: seedPlanRows(),
+  ODRW1: seedPlanRows(),
+},
 });
 
 function mapInstrumentsToRows(insts) {
@@ -104,17 +108,22 @@ function mapInstrumentsToRows(insts) {
 }
 
 function App() {
+  const [sectionOrder, setSectionOrder] = useState([
+    "encumbrances",
+    "agreements",
+    "plans"
+  ]);
   const [tracker, setTracker] = useState(() => buildDefaultTracker());
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [newPlanName, setNewPlanName] = useState("");
   const fileInputRef = useRef(null);
-
+  
   const planEntries = useMemo(
     () => Object.entries(tracker.plans ?? {}),
     [tracker.plans],
   );
-
+  
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -393,56 +402,93 @@ function App() {
         </div>
       </section>
 
-      <EncumbranceTable
-        rows={tracker.existing_encumbrances_on_title ?? []}
-        actionOptions={ACTION_OPTIONS}
-        statusOptions={STATUS_OPTIONS}
-        onFieldChange={handleEncFieldChange}
-        onAddRow={addEncRow}
-        onRemoveRow={removeEncRow}
-      />
+      <section className="sections">
+        <DragDropContext
+          onDragEnd={(result) => {
+            if (!result.destination) return;
 
-      <AgreementsTable
-        rows={tracker.new_agreements ?? []}
-        statusOptions={STATUS_OPTIONS}
-        onFieldChange={handleAgreementFieldChange}
-        onAddRow={addAgreementRow}
-        onRemoveRow={removeAgreementRow}
-      />
-
-      <section className="plan-section">
-        <div className="plan-header">
-          <h2>Plans</h2>
-          <div className="plan-new">
-            <input
-              value={newPlanName}
-              onChange={(e) => setNewPlanName(e.target.value)}
-              placeholder="Plan label (e.g., SUB2)"
-            />
-            <button
-              type="button"
-              onClick={handleCreatePlan}
-              disabled={!newPlanName.trim()}
-            >
-              + Plan
-            </button>
-          </div>
-        </div>
-        {planEntries.length === 0 ? (
-          <p className="empty-row">No plans defined yet.</p>
-        ) : (
-          planEntries.map(([planName, rows]) => (
-            <PlanSection
-              key={planName}
-              name={planName}
-              rows={rows}
-              statusOptions={STATUS_OPTIONS}
-              onFieldChange={handlePlanFieldChange}
-              onAddRow={addPlanRow}
-              onRemoveRow={removePlanRow}
-            />
-          ))
-        )}
+            const items = Array.from(sectionOrder);
+            const [moved] = items.splice(result.source.index, 1);
+            items.splice(result.destination.index, 0, moved);
+            setSectionOrder(items);
+          }}
+        >
+          <Droppable droppableId="sections">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef}>
+                {sectionOrder.map((sec, index) => (
+                  <Draggable key={sec} draggableId={sec} index={index}>
+                    {(provided) => (
+                      <div
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        ref={provided.innerRef}
+                        className="section-wrapper"
+                      >
+                        {sec === "encumbrances" && (
+                          <EncumbranceTable
+                            rows={tracker.existing_encumbrances_on_title ?? []}
+                            actionOptions={ACTION_OPTIONS}
+                            statusOptions={STATUS_OPTIONS}
+                            onFieldChange={handleEncFieldChange}
+                            onAddRow={addEncRow}
+                            onRemoveRow={removeEncRow}
+                          />
+                        )}
+                        {sec === "agreements" && (
+                          <AgreementsTable
+                            rows={tracker.new_agreements ?? []}
+                            statusOptions={STATUS_OPTIONS}
+                            onFieldChange={handleAgreementFieldChange}
+                            onAddRow={addAgreementRow}
+                            onRemoveRow={removeAgreementRow}
+                          />
+                        )}
+                        {sec === "plans" && (
+                          <section className="plan-section">
+                            <div className="plan-header">
+                              <h2>Plans</h2>
+                              <div className="plan-new">
+                                <input
+                                  value={newPlanName}
+                                  onChange={(e) => setNewPlanName(e.target.value)}
+                                  placeholder="Plan label (e.g., SUB2)"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleCreatePlan}
+                                  disabled={!newPlanName.trim()}
+                                >
+                                  + Plan
+                                </button>
+                              </div>
+                            </div>
+                            {planEntries.length === 0 ? (
+                              <p className="empty-row">No plans defined yet.</p>
+                            ) : (
+                              planEntries.map(([planName, rows]) => (
+                                <PlanSection
+                                  key={planName}
+                                  name={planName}
+                                  rows={rows}
+                                  statusOptions={STATUS_OPTIONS}
+                                  onFieldChange={handlePlanFieldChange}
+                                  onAddRow={addPlanRow}
+                                  onRemoveRow={removePlanRow}
+                                />
+                              ))
+                            )}
+                          </section>
+                        )}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </section>
     </div>
   );
