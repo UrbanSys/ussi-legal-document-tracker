@@ -108,11 +108,11 @@ function mapInstrumentsToRows(insts) {
 }
 
 function App() {
-  const [sectionOrder, setSectionOrder] = useState([
-    "encumbrances",
-    "agreements",
-    "plans"
-  ]);
+  const [sectionOrder, setSectionOrder] = useState(() => {
+  const saved = localStorage.getItem("sectionOrder");
+    return saved ? JSON.parse(saved) : ["encumbrances", "agreements", "plans"];
+  });
+
   const [tracker, setTracker] = useState(() => buildDefaultTracker());
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
@@ -125,6 +125,7 @@ function App() {
   );
   
   useEffect(() => {
+    localStorage.setItem("sectionOrder", JSON.stringify(sectionOrder));
     let cancelled = false;
     const load = async () => {
       setLoading(true);
@@ -155,7 +156,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sectionOrder]);
 
   const updateTracker = (transform) => {
     setTracker((prev) => ({
