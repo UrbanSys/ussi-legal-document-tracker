@@ -249,6 +249,16 @@ function App() {
       };
     });
 
+  const removePlan = (planName) =>
+    updateTracker((prev) => {
+      const updatedPlans = { ...prev.plans };
+      delete updatedPlans[planName]; // <-- remove the whole plan
+
+      return {
+        plans: updatedPlans
+      };
+    });
+
   const handleCreatePlan = () => {
     const cleaned = newPlanName.trim().toUpperCase();
     if (!cleaned) {
@@ -476,6 +486,7 @@ function App() {
                                   onFieldChange={handlePlanFieldChange}
                                   onAddRow={addPlanRow}
                                   onRemoveRow={removePlanRow}
+                                  onRemovePlan={removePlan}
                                 />
                               ))
                             )}

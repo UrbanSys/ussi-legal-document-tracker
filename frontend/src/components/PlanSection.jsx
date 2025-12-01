@@ -18,12 +18,16 @@ export function PlanSection({
   onFieldChange,
   onAddRow,
   onRemoveRow,
+  onRemovePlan
 }) {
   return (
     <section className="panel">
       <div className="panel__heading">
         <h3>Plan – {name}</h3>
         <div className="panel__actions">
+          <button type="button" className = "danger" onClick={() => onRemovePlan(name)}>
+            - Plan
+          </button>
           <button type="button" onClick={() => onAddRow(name)}>
             + Row
           </button>
