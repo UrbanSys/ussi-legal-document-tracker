@@ -109,23 +109,59 @@ function mapInstrumentsToRows(insts) {
 
 function App() {
   const [sectionOrder, setSectionOrder] = useState(() => {
-  const saved = localStorage.getItem("sectionOrder");
-    return saved ? JSON.parse(saved) : ["encumbrances", "agreements", "plans"];
+    try {
+      const saved = localStorage.getItem("sectionOrder");
+      return saved ? JSON.parse(saved) : ["encumbrances", "agreements", "plans"];
+    } catch {
+      return ["encumbrances", "agreements", "plans"];
+    }
   });
 
+  // planOrder: persisted ordering of plan groups (SUB1, URW1, etc)
+  const [planOrder, setPlanOrder] = useState([]);
   const [tracker, setTracker] = useState(() => buildDefaultTracker());
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [newPlanName, setNewPlanName] = useState("");
   const fileInputRef = useRef(null);
-  
-  const planEntries = useMemo(
-    () => Object.entries(tracker.plans ?? {}),
-    [tracker.plans],
-  );
-  
+
+  // planEntries follow planOrder and filter out removed plans
+  const planEntries = useMemo(() => {
+    const plans = tracker.plans ?? {};
+    return planOrder.filter((name) => plans[name]).map((name) => [name, plans[name]]);
+  }, [tracker.plans, planOrder]);
+
+  // persist sectionOrder and planOrder when they change
   useEffect(() => {
-    localStorage.setItem("sectionOrder", JSON.stringify(sectionOrder));
+    try {
+      localStorage.setItem("sectionOrder", JSON.stringify(sectionOrder));
+    } catch {}
+  }, [sectionOrder]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("planOrder", JSON.stringify(planOrder));
+    } catch {}
+  }, [planOrder]);
+
+  useEffect(() => {
+  if (tracker?.plans) {
+    const existingNames = Object.keys(tracker.plans);
+    const fromBackend = tracker.plan_order ?? existingNames;
+
+    // Filter out deleted plans + keep order
+    const synced = fromBackend.filter(name => existingNames.includes(name));
+
+    // Append any new plans not in order list
+    const extras = existingNames.filter(name => !synced.includes(name));
+
+    setPlanOrder([...synced, ...extras]);
+  }
+}, [tracker.plans, tracker.plan_order]);
+
+
+  // load tracker once on mount
+  useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
@@ -134,6 +170,13 @@ function App() {
         if (!cancelled) {
           if (payload) {
             setTracker(payload);
+            // ensure planOrder includes backend plans (append any missing ones)
+            const backendKeys = Object.keys(payload.plans ?? {});
+            setPlanOrder((prev) => {
+              const merged = Array.from(new Set([...prev, ...backendKeys]));
+              // keep only keys that exist in the payload
+              return merged.filter((k) => (payload.plans ?? {})[k]);
+            });
             setStatus("Tracker loaded from backend.");
           } else {
             setTracker(buildDefaultTracker());
@@ -156,7 +199,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [sectionOrder]);
+  }, []);
 
   const updateTracker = (transform) => {
     setTracker((prev) => ({
@@ -252,18 +295,25 @@ function App() {
   const removePlan = (planName) =>
     updateTracker((prev) => {
       const updatedPlans = { ...prev.plans };
-      delete updatedPlans[planName]; // <-- remove the whole plan
-
+      delete updatedPlans[planName]; // remove whole plan
       return {
-        plans: updatedPlans
+        plans: updatedPlans,
       };
     });
+
+  // keep planOrder in sync when plan removed
+  useEffect(() => {
+    // remove any planOrder entries that no longer exist in tracker.plans
+    setPlanOrder((prev) => prev.filter((name) => typeof tracker.plans?.[name] !== "undefined"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tracker.plans]);
 
   const handleCreatePlan = () => {
     const cleaned = newPlanName.trim().toUpperCase();
     if (!cleaned) {
       return;
     }
+
     updateTracker((prev) => {
       if (prev.plans?.[cleaned]) {
         return {};
@@ -275,6 +325,13 @@ function App() {
         },
       };
     });
+
+    // add to ordering
+    setPlanOrder((prev) => {
+      if (prev.includes(cleaned)) return prev;
+      return [...prev, cleaned];
+    });
+
     setNewPlanName("");
   };
 
@@ -322,6 +379,9 @@ function App() {
       if (payload) {
         setTracker(payload);
         setStatus("Tracker reloaded from backend.");
+        // ensure planOrder includes backend plans
+        const backendKeys = Object.keys(payload.plans ?? {});
+        setPlanOrder((prev) => Array.from(new Set([...prev, ...backendKeys])));
       } else {
         setTracker(buildDefaultTracker());
         setStatus("Backend unavailable. Using local template data.");
@@ -361,6 +421,27 @@ function App() {
       setStatus(`Document generation failed: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Unified onDragEnd for both SECTION and PLAN types
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+
+    if (result.type === "SECTION") {
+      const items = Array.from(sectionOrder);
+      const [moved] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, moved);
+      setSectionOrder(items);
+      return;
+    }
+
+    if (result.type === "PLAN") {
+      const items = Array.from(planOrder);
+      const [moved] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, moved);
+      setPlanOrder(items);
+      return;
     }
   };
 
@@ -414,27 +495,22 @@ function App() {
       </section>
 
       <section className="sections">
-        <DragDropContext
-          onDragEnd={(result) => {
-            if (!result.destination) return;
-
-            const items = Array.from(sectionOrder);
-            const [moved] = items.splice(result.source.index, 1);
-            items.splice(result.destination.index, 0, moved);
-            setSectionOrder(items);
-          }}
-        >
-          <Droppable droppableId="sections">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="sections" type="SECTION">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
                 {sectionOrder.map((sec, index) => (
                   <Draggable key={sec} draggableId={sec} index={index}>
-                    {(provided) => (
+                    {(providedSection, snapshotSection) => (
                       <div
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        ref={provided.innerRef}
+                        ref={providedSection.innerRef}
+                        {...providedSection.draggableProps}
+                        {...providedSection.dragHandleProps}
                         className="section-wrapper"
+                        style={{
+                          marginBottom: 12,
+                          ...providedSection.draggableProps.style,
+                        }}
                       >
                         {sec === "encumbrances" && (
                           <EncumbranceTable
@@ -474,22 +550,47 @@ function App() {
                                 </button>
                               </div>
                             </div>
-                            {planEntries.length === 0 ? (
-                              <p className="empty-row">No plans defined yet.</p>
-                            ) : (
-                              planEntries.map(([planName, rows]) => (
-                                <PlanSection
-                                  key={planName}
-                                  name={planName}
-                                  rows={rows}
-                                  statusOptions={STATUS_OPTIONS}
-                                  onFieldChange={handlePlanFieldChange}
-                                  onAddRow={addPlanRow}
-                                  onRemoveRow={removePlanRow}
-                                  onRemovePlan={removePlan}
-                                />
-                              ))
-                            )}
+
+                            <Droppable droppableId="plans" type="PLAN">
+                              {(providedPlans) => (
+                                <div ref={providedPlans.innerRef} {...providedPlans.droppableProps}>
+                                  {planEntries.length === 0 ? (
+                                    <p className="empty-row">No plans defined yet.</p>
+                                  ) : (
+                                    planEntries.map(([planName, rows], pIndex) => (
+                                      <Draggable key={planName} draggableId={planName} index={pIndex}>
+                                        {(providedPlan, snapshotPlan) => (
+                                          <div
+                                            ref={providedPlan.innerRef}
+                                            {...providedPlan.draggableProps}
+                                            {...providedPlan.dragHandleProps}
+                                            style={{
+                                              marginBottom: "1rem",
+                                              ...providedPlan.draggableProps.style,
+                                            }}
+                                          >
+                                            <PlanSection
+                                              name={planName}
+                                              rows={rows}
+                                              statusOptions={STATUS_OPTIONS}
+                                              onFieldChange={handlePlanFieldChange}
+                                              onAddRow={addPlanRow}
+                                              onRemoveRow={removePlanRow}
+                                              onRemovePlan={(name) => {
+                                                // remove plan from tracker and order
+                                                removePlan(name);
+                                                setPlanOrder((prev) => prev.filter((n) => n !== name));
+                                              }}
+                                            />
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    ))
+                                  )}
+                                  {providedPlans.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
                           </section>
                         )}
                       </div>
