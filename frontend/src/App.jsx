@@ -118,7 +118,14 @@ function App() {
   });
 
   // planOrder: persisted ordering of plan groups (SUB1, URW1, etc)
-  const [planOrder, setPlanOrder] = useState([]);
+  const [planOrder, setPlanOrder] = useState(() => {
+    try {
+      const saved = localStorage.getItem("planOrder");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [tracker, setTracker] = useState(() => buildDefaultTracker());
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
@@ -179,14 +186,18 @@ function App() {
             });
             setStatus("Tracker loaded from backend.");
           } else {
-            setTracker(buildDefaultTracker());
+            const defaultTracker = buildDefaultTracker();
+            setTracker(defaultTracker);
+            setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
             setStatus("Backend unavailable. Using local template data.");
           }
         }
       } catch (error) {
         if (!cancelled) {
           console.error(error);
-          setTracker(buildDefaultTracker());
+          const defaultTracker = buildDefaultTracker();
+          setTracker(defaultTracker);
+          setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
           setStatus("Unable to reach backend. Using local template data.");
         }
       } finally {
@@ -383,12 +394,16 @@ function App() {
         const backendKeys = Object.keys(payload.plans ?? {});
         setPlanOrder((prev) => Array.from(new Set([...prev, ...backendKeys])));
       } else {
-        setTracker(buildDefaultTracker());
+        const defaultTracker = buildDefaultTracker();
+        setTracker(defaultTracker);
+        setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
         setStatus("Backend unavailable. Using local template data.");
       }
     } catch (error) {
       console.error(error);
-      setTracker(buildDefaultTracker());
+      const defaultTracker = buildDefaultTracker();
+      setTracker(defaultTracker);
+      setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
       setStatus("Unable to load tracker data. Using template data.");
     } finally {
       setLoading(false);
