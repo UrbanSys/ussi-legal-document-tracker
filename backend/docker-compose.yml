@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ussi-backend
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - RELOAD=False
+      - DEBUG=${DEBUG:-False}
+      - UPLOAD_DIRECTORY=/app/uploads
+    volumes:
+      - ./uploads:/app/uploads
+      - ./app:/app/app
+    networks:
+      - ussi-network
+    depends_on:
+      - mssql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # MSSQL Database (Optional - for local development)
+  # Uncomment to use MSSQL in Docker
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: ussi-mssql
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: ${SA_PASSWORD:-YourStrongPassword123!}
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql/data
+      - ./database_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - ussi-network
+    restart: unless-stopped
+
+networks:
+  ussi-network:
+    driver: bridge
+
+volumes:
+  mssql_data:
+    driver: local

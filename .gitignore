@@ -1,2 +1,7 @@
 version_info.py
 /__pycache__
+
+
+.sql
+*.sqlite3
+*.db    
