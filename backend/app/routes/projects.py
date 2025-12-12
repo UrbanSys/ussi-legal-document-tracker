@@ -52,7 +52,7 @@ def create_surveyor(surveyor: SurveyorCreate, db: Session = Depends(get_db)):
 @router.get("", response_model=List[ProjectResponse])
 def list_projects(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     """Get all projects with pagination."""
-    projects = db.query(Project).offset(skip).limit(limit).all()
+    projects = db.query(Project).order_by(Project.id).offset(skip).limit(limit).all()
     return projects
 
 

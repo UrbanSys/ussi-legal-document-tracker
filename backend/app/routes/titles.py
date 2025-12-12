@@ -93,6 +93,7 @@ def list_title_documents(
     title_docs = (
         db.query(TitleDocument)
         .filter(TitleDocument.project_id == project_id)
+        .order_by(TitleDocument.id.asc())
         .offset(skip)
         .limit(limit)
         .all()
