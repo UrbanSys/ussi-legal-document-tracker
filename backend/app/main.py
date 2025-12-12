@@ -32,9 +32,9 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     """Initialize database on startup."""
-    create_all_tables()
+    # create_all_tables()  # Commented out - tables already exist in database
     print(f"✓ {APP_NAME} v{APP_VERSION} started")
-    print(f"✓ Database tables initialized")
+    print(f"✓ Database connected")
     print(f"✓ API docs available at: http://localhost:8000/docs")
 
 

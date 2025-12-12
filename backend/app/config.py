@@ -7,24 +7,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database Configuration
-# Check if DATABASE_URL is directly set in .env
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Database Configuration - SQL Server with username/password from .env
+DB_USERNAME = os.getenv("DB_USERNAME")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_SERVER = os.getenv("DB_SERVER")
+DB_NAME = os.getenv("DB_NAME")
 
-if not DATABASE_URL:
-    # Build from individual components if DATABASE_URL not set
-    db_user = os.getenv("username")
-    db_password = os.getenv("password")
-    db_server = os.getenv("server")
-    db_name = os.getenv("database")
-    
-    if db_user and db_password and db_server and db_name:
-        # Use SQL Server authentication with username/password
-        DATABASE_URL = f"mssql+pyodbc://{db_user}:{db_password}@{db_server}/{db_name}?driver=ODBC+Driver+17+for+SQL+Server"
-    else:
-        # Fallback to Windows authentication
-        DATABASE_URL = "mssql+pyodbc:///?odbc_connect=Driver={ODBC Driver 17 for SQL Server};Server=USLDEV\TESTING;Database=LegalDocumentTracker;Trusted_Connection=yes"
+# Validate required environment variables
+if not all([DB_USERNAME, DB_PASSWORD, DB_SERVER, DB_NAME]):
+    raise ValueError(
+        "Missing database configuration. Please set these in backend/.env:\n"
+        "  DB_USERNAME=your_username\n"
+        "  DB_PASSWORD=your_password\n"
+        "  DB_SERVER=your_server\n"
+        "  DB_NAME=your_database"
+    )
 
+DATABASE_URL = f"mssql+pyodbc://{DB_USERNAME}:{DB_PASSWORD}@{DB_SERVER}/{DB_NAME}?driver=ODBC+Driver+17+for+SQL+Server"
 SQLALCHEMY_DATABASE_URL = DATABASE_URL
 
 # Application Settings
@@ -41,8 +40,10 @@ ALLOWED_DOCX_EXTENSIONS = {".docx", ".doc"}
 # CORS Settings
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "http://localhost:5173",  # Vite dev server
     "http://localhost:8000",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
 ]
 
 # Create upload directory if it doesn't exist
