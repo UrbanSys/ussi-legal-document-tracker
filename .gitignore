@@ -5,3 +5,4 @@ version_info.py
 .sql
 *.sqlite3
 *.db    
+backend/env
