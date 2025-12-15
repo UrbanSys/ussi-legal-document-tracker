@@ -640,7 +640,7 @@ function App() {
                                             };
                                           });
                                         }}
-                                        onRemovePlan={(name) => {
+                                        onRemoveTitle={(name) => {
                                           // remove the entire title
                                           updateTracker((prev) => {
                                             const updatedTitles = { ...prev.titles };

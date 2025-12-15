@@ -27,7 +27,7 @@ export function EncumbranceTable({
         <h3>Title - {name}</h3>
         <div className="panel__actions">
           <button type="button" className = "danger" onClick={() => onRemoveTitle(name)}>
-            - Plan
+            - Title
           </button>
           <button type="button" onClick={() => onAddRow(name)}>
             + Row
