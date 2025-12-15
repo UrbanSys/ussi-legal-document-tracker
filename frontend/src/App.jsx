@@ -151,18 +151,6 @@ function App() {
     loadSurveyors();
   }, []);
 
-  useEffect(() => {
-    const projNum = tracker.project_number?.trim();
-    if (!projNum) return;
-
-    const timer = setTimeout(() => {
-      reloadTracker();
-    }, 20);
-
-    return () => clearTimeout(timer); 
-  }, [tracker.project_number]);
-
-
   const handleProjectNotFound = (projNum) => {
     setNewProjectData({ proj_num: projNum, name: `Project ${projNum}`, municipality: "", surveyor_id: 0 });
     setShowCreateProjectModal(true);
