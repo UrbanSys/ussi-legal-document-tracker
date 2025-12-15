@@ -86,9 +86,6 @@ const buildDefaultTracker = () => ({
 ),
 new_agreements: [createAgreementRow()],
 plans: {
-  SUB1: seedPlanRows(),
-  URW1: seedPlanRows(),
-  ODRW1: seedPlanRows(),
 },
 });
 
@@ -130,6 +127,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [newPlanName, setNewPlanName] = useState("");
+  const [newTitleName, setNewTitleName] = useState("");
   const fileInputRef = useRef(null);
 
   // planEntries follow planOrder and filter out removed plans
@@ -346,6 +344,38 @@ function App() {
     setNewPlanName("");
   };
 
+  const handleCreateTitle = () => {
+    const cleaned = newTitleName.trim().toUpperCase();
+    if (!cleaned) return;
+
+    updateTracker((prev) => {
+      // Make sure tracker has a titles object
+      const titles = prev.titles ?? {};
+
+      if (titles[cleaned]) {
+        // title already exists, do nothing
+        return {};
+      }
+
+      // Add a new title with empty/default fields
+      return {
+        titles: {
+          ...titles,
+          [cleaned]: {
+            legal_desc: "",
+            existing_encumbrances_on_title: Array.from({ length: 3 }, () =>
+              createEncumbranceRow()
+            ),
+            new_agreements: [createAgreementRow()],
+            plans: {},
+          },
+        },
+      };
+    });
+
+    setNewTitleName("");
+  };
+
   const triggerFilePicker = () => {
     fileInputRef.current?.click();
   };
@@ -458,6 +488,15 @@ function App() {
       setPlanOrder(items);
       return;
     }
+
+    if (result.type === "ENCUMBRANCE_ROW") {
+      updateTracker((prev) => {
+        const rows = Array.from(prev.existing_encumbrances_on_title);
+        const [moved] = rows.splice(result.source.index, 1);
+        rows.splice(result.destination.index, 0, moved);
+        return { existing_encumbrances_on_title: rows };
+      });
+    }
   };
 
   return (
@@ -528,15 +567,95 @@ function App() {
                         }}
                       >
                         {sec === "encumbrances" && (
-                          <EncumbranceTable
-                            rows={tracker.existing_encumbrances_on_title ?? []}
-                            actionOptions={ACTION_OPTIONS}
-                            statusOptions={STATUS_OPTIONS}
-                            onFieldChange={handleEncFieldChange}
-                            onAddRow={addEncRow}
-                            onRemoveRow={removeEncRow}
-                          />
+                          <section className="plan-section">
+                            <div className="plan-header">
+                              <h2>Existing Encumbrances on Title</h2>
+                              <div className="plan-new">
+                                <input
+                                  value={newTitleName}
+                                  onChange={(e) => setNewTitleName(e.target.value)}
+                                  placeholder="Title Number"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleCreateTitle}
+                                  disabled={!newTitleName.trim()}
+                                >
+                                  + Title
+                                </button>
+                              </div>
+                            </div>
+
+                            <Droppable droppableId="encumbrances" type="ENCUMBRANCE_ROW">
+                              {(provided) => (
+                                <div ref={provided.innerRef} {...provided.droppableProps}>
+                                  {planEntries.length === 0 ? (
+                                    <p className="empty-row">No titles defined yet.</p>
+                                  ) : (
+                                    Object.entries(tracker.titles).map(([titleName, titleData]) => (
+                                      <EncumbranceTable
+                                        key={titleName}
+                                        name={titleName} 
+                                        rows={titleData.existing_encumbrances_on_title ?? []}
+                                        actionOptions={ACTION_OPTIONS}
+                                        statusOptions={STATUS_OPTIONS}
+                                        onFieldChange={(name, index, field, value) => {
+                                          updateTracker((prev) => {
+                                            const updatedTitles = { ...prev.titles };
+                                            updatedTitles[titleName].existing_encumbrances_on_title[index][field] = value;
+                                            return { titles: updatedTitles };
+                                          });
+                                        }}
+                                        onAddRow={(name) => {
+                                          updateTracker((prev) => {
+                                            const rows = prev.titles[titleName].existing_encumbrances_on_title ?? [];
+                                            return {
+                                              titles: {
+                                                ...prev.titles,
+                                                [titleName]: {
+                                                  ...prev.titles[titleName],
+                                                  existing_encumbrances_on_title: [...rows, createEncumbranceRow()],
+                                                },
+                                              },
+                                            };
+                                          });
+                                        }}
+                                        onRemoveRow={(name) => {
+                                          updateTracker((prev) => {
+                                            const rows = prev.titles[titleName].existing_encumbrances_on_title ?? [];
+                                            return {
+                                              titles: {
+                                                ...prev.titles,
+                                                [titleName]: {
+                                                  ...prev.titles[titleName],
+                                                  existing_encumbrances_on_title: rows.slice(
+                                                    0,
+                                                    Math.max(rows.length - 1, 0)
+                                                  ),
+                                                },
+                                              },
+                                            };
+                                          });
+                                        }}
+                                        onRemovePlan={(name) => {
+                                          // remove the entire title
+                                          updateTracker((prev) => {
+                                            const updatedTitles = { ...prev.titles };
+                                            delete updatedTitles[titleName];
+                                            return { titles: updatedTitles };
+                                          });
+                                        }}
+                                      />
+                                    )))}
+
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </section>
                         )}
+
+
                         {sec === "agreements" && (
                           <AgreementsTable
                             rows={tracker.new_agreements ?? []}

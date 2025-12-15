@@ -12,25 +12,30 @@ const headerLabels = [
 ];
 
 export function EncumbranceTable({
+  name,
   rows,
   actionOptions,
   statusOptions,
   onFieldChange,
   onAddRow,
   onRemoveRow,
+  onRemoveTitle
 }) {
   return (
     <section className="panel">
       <div className="panel__heading">
-        <h2>Existing Encumbrances on Title</h2>
+        <h3>Title - {name}</h3>
         <div className="panel__actions">
-          <button type="button" onClick={onAddRow}>
+          <button type="button" className = "danger" onClick={() => onRemoveTitle(name)}>
+            - Plan
+          </button>
+          <button type="button" onClick={() => onAddRow(name)}>
             + Row
           </button>
           <button
             type="button"
-            onClick={onRemoveRow}
-            disabled={rows.length === 0}
+            onClick={() => onRemoveRow(name)}
+            disabled={!rows || rows.length === 0}
           >
             - Row
           </button>
@@ -46,7 +51,7 @@ export function EncumbranceTable({
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {!rows || rows.length === 0 ? (
               <tr>
                 <td colSpan={headerLabels.length} className="empty-row">
                   No encumbrances captured yet.
@@ -54,21 +59,21 @@ export function EncumbranceTable({
               </tr>
             ) : (
               rows.map((row, index) => (
-                <tr key={`${row.id}-${index}`}>
+                <tr key={`${name}-${row.id ?? index}`}>
                   <td>{index + 1}</td>
                   <td>
                     <input
                       value={row["Document #"] ?? ""}
                       onChange={(e) =>
-                        onFieldChange(index, "Document #", e.target.value)
+                        onFieldChange(name, index, "Document", e.target.value)
                       }
                     />
                   </td>
                   <td>
                     <input
-                      value={row["Description"] ?? ""}
+                      value={row["Copies/Dept"] ?? ""}
                       onChange={(e) =>
-                        onFieldChange(index, "Description", e.target.value)
+                        onFieldChange(name, index, "Description", e.target.value)
                       }
                     />
                   </td>
@@ -76,7 +81,7 @@ export function EncumbranceTable({
                     <textarea
                       value={row["Signatories"] ?? ""}
                       onChange={(e) =>
-                        onFieldChange(index, "Signatories", e.target.value)
+                        onFieldChange(name, index, "Signatories", e.target.value)
                       }
                     />
                   </td>
@@ -84,7 +89,7 @@ export function EncumbranceTable({
                     <select
                       value={row["Action"] ?? actionOptions[0]}
                       onChange={(e) =>
-                        onFieldChange(index, "Action", e.target.value)
+                        onFieldChange(name, index, "Action", e.target.value)
                       }
                     >
                       {actionOptions.map((option) => (
@@ -98,7 +103,12 @@ export function EncumbranceTable({
                     <textarea
                       value={row["Circulation Notes"] ?? ""}
                       onChange={(e) =>
-                        onFieldChange(index, "Circulation Notes", e.target.value)
+                        onFieldChange(
+                          name,
+                          index,
+                          "Circulation Notes",
+                          e.target.value,
+                        )
                       }
                     />
                   </td>
@@ -106,7 +116,7 @@ export function EncumbranceTable({
                     <select
                       value={row["Status"] ?? statusOptions[0]}
                       onChange={(e) =>
-                        onFieldChange(index, "Status", e.target.value)
+                        onFieldChange(name, index, "Status", e.target.value)
                       }
                     >
                       {statusOptions.map((option) => (
@@ -133,6 +143,10 @@ EncumbranceTable.propTypes = {
   onFieldChange: PropTypes.func.isRequired,
   onAddRow: PropTypes.func.isRequired,
   onRemoveRow: PropTypes.func.isRequired,
+};
+
+EncumbranceTable.defaultProps = {
+  rows: [],
 };
 
 export default EncumbranceTable;
