@@ -512,14 +512,24 @@ function App() {
         </div>
         <div className="header-meta">
           <label className="field">
-            <span>Legal Description</span>
-            <textarea
-              value={tracker.legal_desc ?? ""}
-              onChange={(e) =>
-                updateTracker(() => ({ legal_desc: e.target.value }))
-              }
-              placeholder="Enter legal description..."
-            />
+            <span>Project Number</span>
+              <div className="plan-new"><input
+                className=""
+                type="text"
+                value={tracker.project_number ?? ""}
+                onChange={(e) =>
+                  updateTracker(() => ({ project_number: e.target.value }))
+                }
+                placeholder="Enter project number..."
+              />
+              <button
+                type="button"
+                onClick={reloadTracker}
+                disabled={loading || !(tracker.project_number?.trim())}
+              >
+                Load
+              </button>
+            </div>
           </label>
         </div>
       </header>
