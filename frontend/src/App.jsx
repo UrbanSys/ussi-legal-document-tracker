@@ -5,7 +5,6 @@ import PlanSection from "./components/PlanSection.jsx";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import {
-  fetchTracker,
   saveTracker,
   importTitle as importTitleApi,
   generateDocuments,

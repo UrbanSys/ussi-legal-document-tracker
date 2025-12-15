@@ -65,13 +65,13 @@ export function EncumbranceTable({
                     <input
                       value={row["Document #"] ?? ""}
                       onChange={(e) =>
-                        onFieldChange(name, index, "Document", e.target.value)
+                        onFieldChange(name, index, "Document #", e.target.value)
                       }
                     />
                   </td>
                   <td>
                     <input
-                      value={row["Copies/Dept"] ?? ""}
+                      value={row["Description"] ?? ""}
                       onChange={(e) =>
                         onFieldChange(name, index, "Description", e.target.value)
                       }

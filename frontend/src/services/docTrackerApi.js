@@ -94,3 +94,15 @@ export async function createProject(projectData) {
     throw error;
   }
 }
+
+export async function updateEncumbrance(encumbranceId, payload) {
+  if (!encumbranceId) {
+    throw new Error("Encumbrance ID is required");
+  }
+
+  return await request(`/titles/encumbrances/${encumbranceId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
