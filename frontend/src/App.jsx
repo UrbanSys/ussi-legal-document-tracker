@@ -35,8 +35,6 @@ const PROGRAM_METADATA = {
   file_version: 1,
 };
 
-
-
 const uniqueId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
 ? crypto.randomUUID()
@@ -81,12 +79,10 @@ const seedPlanRows = () => [
 const buildDefaultTracker = () => ({
   header: { ...PROGRAM_METADATA },
   legal_desc: "",
-  existing_encumbrances_on_title: Array.from({ length: 3 }, () =>
-    createEncumbranceRow(),
-),
-new_agreements: [createAgreementRow()],
-plans: {
-},
+  existing_encumbrances_on_title: [], // start blank
+  new_agreements: [createAgreementRow()],                 // start blank
+  plans: {},                          // no plans initially
+  titles: {},                          // no titles initially
 });
 
 function mapInstrumentsToRows(insts) {
@@ -135,6 +131,13 @@ function App() {
     const plans = tracker.plans ?? {};
     return planOrder.filter((name) => plans[name]).map((name) => [name, plans[name]]);
   }, [tracker.plans, planOrder]);
+
+  // Memoized titles entries
+  const titleEntries = useMemo(() => {
+    const titles = tracker.titles ?? {};
+    return Object.entries(titles);
+  }, [tracker.titles]);
+
 
   // persist sectionOrder and planOrder when they change
   useEffect(() => {
@@ -589,10 +592,10 @@ function App() {
                             <Droppable droppableId="encumbrances" type="ENCUMBRANCE_ROW">
                               {(provided) => (
                                 <div ref={provided.innerRef} {...provided.droppableProps}>
-                                  {planEntries.length === 0 ? (
+                                  {titleEntries.length === 0 ? (
                                     <p className="empty-row">No titles defined yet.</p>
                                   ) : (
-                                    Object.entries(tracker.titles).map(([titleName, titleData]) => (
+                                    titleEntries.map(([titleName, titleData]) => (
                                       <EncumbranceTable
                                         key={titleName}
                                         name={titleName} 
