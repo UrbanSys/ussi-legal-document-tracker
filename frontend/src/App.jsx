@@ -11,6 +11,7 @@ import {
   fetchProjectByNumber,
   fetchSurveyors,
   createProject,
+  updateEncumbrance,
 } from "./services/docTrackerApi.js";
 import "./App.css";
 
@@ -136,6 +137,17 @@ function App() {
     municipality: "",
     surveyor_id: 0,
   });
+  const encumbranceSaveTimers = useRef({});
+
+  const buildEncumbrancePayload = (row) => ({
+    document_number: row["Document #"],
+    description: row.Description,
+    signatories: row.Signatories,
+    action: row.Action,
+    circulation_notes: row["Circulation Notes"],
+    status: row.Status,
+  });
+
 
   useEffect(() => {
     const loadSurveyors = async () => {
@@ -175,6 +187,7 @@ function App() {
             legal_desc: "", // you can use td.description if available
             existing_encumbrances_on_title: td.encumbrances?.map((e) => ({
               id: uniqueId(),
+              backend_id: e.id,
               "Document #": e.document_number || "",
               Description: e.description || "",
               Signatories: e.signatories || "",
@@ -473,6 +486,7 @@ function App() {
             legal_desc: "",
             existing_encumbrances_on_title: td.encumbrances?.map(e => ({
               id: uniqueId(),
+              backend_id: e.id,
               "Document #": e.document_number || "",
               Description: e.description || "",
               Signatories: e.signatories || "",
@@ -568,6 +582,27 @@ function App() {
       });
     }
   };
+
+  const debounceSaveEncumbrance = (row) => {
+    const encId = row.backend_id;
+    if (!encId) return; // new rows not yet saved on backend
+
+    // Clear existing timer
+    if (encumbranceSaveTimers.current[encId]) {
+      clearTimeout(encumbranceSaveTimers.current[encId]);
+    }
+
+    // Set new debounce timer
+    encumbranceSaveTimers.current[encId] = setTimeout(async () => {
+      try {
+        await updateEncumbrance(encId, buildEncumbrancePayload(row));
+        console.log(`Encumbrance ${encId} autosaved`);
+      } catch (err) {
+        console.error(`Failed to autosave encumbrance ${encId}`, err);
+      }
+    }, 500);
+  };
+
 
   return (
     <div className="app-shell">
@@ -730,7 +765,22 @@ function App() {
                                         onFieldChange={(name, index, field, value) => {
                                           updateTracker((prev) => {
                                             const updatedTitles = { ...prev.titles };
-                                            updatedTitles[titleName].existing_encumbrances_on_title[index][field] = value;
+                                            const rows = updatedTitles[titleName].existing_encumbrances_on_title;
+
+                                            const updatedRow = {
+                                              ...rows[index],
+                                              [field]: value,
+                                            };
+
+                                            console.log(updatedRow)
+
+                                            updatedTitles[titleName] = {
+                                              ...updatedTitles[titleName],
+                                              existing_encumbrances_on_title: rows.map((row, i) =>
+                                                i === index ? { ...row, [field]: value } : row
+                                              ),
+                                            };
+                                            debounceSaveEncumbrance(updatedRow);
                                             return { titles: updatedTitles };
                                           });
                                         }}
