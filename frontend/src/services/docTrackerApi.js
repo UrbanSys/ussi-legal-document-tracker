@@ -74,3 +74,10 @@ export async function fetchProjectByNumber(projNum) {
   if (!projNum) throw new Error("Project number is required");
   return await request(`/projects/by-number/${encodeURIComponent(projNum)}`);
 }
+
+export async function fetchSurveyors() {
+  return await request("/projects/surveyors", {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+}

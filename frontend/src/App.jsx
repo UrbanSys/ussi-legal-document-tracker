@@ -10,6 +10,7 @@ import {
   importTitle as importTitleApi,
   generateDocuments,
   fetchProjectByNumber,
+  fetchSurveyors,
 } from "./services/docTrackerApi.js";
 import "./App.css";
 
@@ -127,6 +128,33 @@ function App() {
   const [newTitleName, setNewTitleName] = useState("");
   const fileInputRef = useRef(null);
   const [projectNumber, setProjectNumber] = useState("");
+  const [surveyors, setSurveyors] = useState([]);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [newProjectData, setNewProjectData] = useState({
+    proj_num: "",
+    name: "",
+    municipality: "",
+    surveyor_id: 0,
+  });
+
+  useEffect(() => {
+    const loadSurveyors = async () => {
+      try {
+        const data = await fetchSurveyors();
+        console.log(data)
+        setSurveyors(data);
+      } catch (err) {
+        console.error("Failed to fetch surveyors:", err);
+      }
+    };
+    loadSurveyors();
+  }, []);
+
+  const handleProjectNotFound = (projNum) => {
+    setNewProjectData({ proj_num: projNum, name: `Project ${projNum}`, municipality: "", surveyor_id: 0 });
+    setShowCreateProjectModal(true);
+  };
+
 
   const handleLoadProject = async () => {
     if (!projectNumber.trim()) return;
@@ -428,31 +456,34 @@ function App() {
   };
 
   const reloadTracker = async () => {
-    if (!tracker.project_number?.trim()) return;
+    const projNum = tracker.project_number?.trim();
+    if (!projNum) return;
 
     setLoading(true);
+    setStatus("Loading project...");
+
     try {
-      const project = await fetchProjectByNumber(tracker.project_number.trim());
+      const project = await fetchProjectByNumber(projNum);
+
       if (project) {
+        // Map project data into tracker
         const titles = {};
-        if (project.title_documents?.length > 0) {
-          project.title_documents.forEach((td) => {
-            titles[`TITLE-${td.id}`] = {
-              legal_desc: "",
-              existing_encumbrances_on_title: td.encumbrances?.map((e) => ({
-                id: uniqueId(),
-                "Document #": e.document_number || "",
-                Description: e.description || "",
-                Signatories: e.signatories || "",
-                Action: e.action || ACTION_OPTIONS[0],
-                "Circulation Notes": e.circulation_notes || "",
-                Status: e.status || STATUS_OPTIONS[0],
-              })) || [],
-              new_agreements: [],
-              plans: {},
-            };
-          });
-        }
+        project.title_documents?.forEach(td => {
+          titles[`TITLE-${td.id}`] = {
+            legal_desc: "",
+            existing_encumbrances_on_title: td.encumbrances?.map(e => ({
+              id: uniqueId(),
+              "Document #": e.document_number || "",
+              Description: e.description || "",
+              Signatories: e.signatories || "",
+              Action: e.action || ACTION_OPTIONS[0],
+              "Circulation Notes": e.circulation_notes || "",
+              Status: e.status || STATUS_OPTIONS[0],
+            })) || [],
+            new_agreements: [],
+            plans: {},
+          };
+        });
 
         setTracker({
           header: { ...PROGRAM_METADATA },
@@ -464,22 +495,20 @@ function App() {
           titles,
         });
         setPlanOrder([]);
-        setStatus(`Project ${tracker.project_number} loaded successfully.`);
-      } else {
-        setTracker(buildDefaultTracker());
-        setPlanOrder([]);
-        setStatus("Project not found. Using local template data.");
+        setStatus(`Project ${projNum} loaded successfully.`);
       }
-    } catch (error) {
-      console.error(error);
-      setTracker(buildDefaultTracker());
-      setPlanOrder([]);
-      setStatus(`Failed to load project: ${error.message}`);
+    } catch (err) {
+      if (err.message.includes("404")) {
+        handleProjectNotFound(projNum);
+        setStatus(`Project ${projNum} not found. Please enter details to create a new project.`);
+      } else {
+        setStatus(`Failed to load project: ${err.message}`);
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
   };
-
 
   const persistTracker = async () => {
     setLoading(true);
@@ -572,6 +601,58 @@ function App() {
         </div>
       </header>
 
+      {showCreateProjectModal && (
+        <div className="modal">
+          <h2>Create New Project</h2>
+          <label>
+            Project Name:
+            <input
+              type="text"
+              value={newProjectData.name}
+              onChange={(e) => setNewProjectData((prev) => ({ ...prev, name: e.target.value }))}
+            />
+          </label>
+          <label>
+            Municipality:
+            <input
+              type="text"
+              value={newProjectData.municipality}
+              onChange={(e) => setNewProjectData((prev) => ({ ...prev, municipality: e.target.value }))}
+            />
+          </label>
+          <label>
+            Surveyor:
+            <select
+              value={newProjectData.surveyor_id}
+              onChange={(e) => setNewProjectData((prev) => ({ ...prev, surveyor_id: Number(e.target.value) }))}
+            >
+              <option value={0}>Select Surveyor</option>
+              {surveyors.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.city})</option>
+              ))}
+            </select>
+          </label>
+          <button onClick={async () => {
+            try {
+              const res = await fetch("/api/projects", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newProjectData),
+              });
+              if (!res.ok) throw new Error(await res.text());
+              const project = await res.json();
+              setShowCreateProjectModal(false);
+              setTracker(prev => ({ ...prev, project_number: project.proj_num }));
+              reloadTracker();
+            } catch (err) {
+              alert("Failed to create project: " + err.message);
+            }
+          }}>Create Project</button>
+          <button onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
+        </div>
+      )}
+
+
       <section className="toolbar">
         <div className="toolbar__group">
           <button onClick={triggerFilePicker} disabled={loading}>
@@ -595,7 +676,7 @@ function App() {
           />
         </div>
         <div className="status-line">
-          {loading ? "Working..." : status || "Ready."}
+          {loading ? "Working..." : status || ""}
         </div>
       </section>
 
