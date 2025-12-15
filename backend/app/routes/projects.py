@@ -37,6 +37,18 @@ def get_surveyor(surveyor_id: int, db: Session = Depends(get_db)):
         )
     return surveyor
 
+@router.delete("/surveyors/{surveyor_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_surveyor(surveyor_id: int, db: Session = Depends(get_db)):
+    """Delete a specific surveyor by ID."""
+    surveyor = db.query(SurveyorALS).filter(SurveyorALS.id == surveyor_id).first()
+    if not surveyor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Surveyor not found",
+        )
+    db.delete(surveyor)
+    db.commit()
+
 
 @router.post("/surveyors", response_model=SurveyorResponse)
 def create_surveyor(surveyor: SurveyorCreate, db: Session = Depends(get_db)):
