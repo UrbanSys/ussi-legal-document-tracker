@@ -596,7 +596,6 @@ function App() {
     encumbranceSaveTimers.current[encId] = setTimeout(async () => {
       try {
         await updateEncumbrance(encId, buildEncumbrancePayload(row));
-        console.log(`Encumbrance ${encId} autosaved`);
       } catch (err) {
         console.error(`Failed to autosave encumbrance ${encId}`, err);
       }
@@ -771,9 +770,7 @@ function App() {
                                               ...rows[index],
                                               [field]: value,
                                             };
-
-                                            console.log(updatedRow)
-
+                                            
                                             updatedTitles[titleName] = {
                                               ...updatedTitles[titleName],
                                               existing_encumbrances_on_title: rows.map((row, i) =>
