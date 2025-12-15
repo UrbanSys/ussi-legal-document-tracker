@@ -67,7 +67,7 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
         )
     return project
 
-@router.get("/by-number/{proj_num}", response_model=ProjectDetailResponse)
+@router.get("/by-number/{project_num}", response_model=ProjectDetailResponse)
 def get_project_by_number(project_num: str, db: Session = Depends(get_db)):
     """Get a specific project by project number"""
 

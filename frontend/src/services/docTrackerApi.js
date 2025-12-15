@@ -69,3 +69,8 @@ export async function generateDocuments(payload) {
     throw error;
   }
 }
+
+export async function fetchProjectByNumber(projNum) {
+  if (!projNum) throw new Error("Project number is required");
+  return await request(`/projects/by-number/${encodeURIComponent(projNum)}`);
+}

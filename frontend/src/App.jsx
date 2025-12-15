@@ -9,6 +9,7 @@ import {
   saveTracker,
   importTitle as importTitleApi,
   generateDocuments,
+  fetchProjectByNumber,
 } from "./services/docTrackerApi.js";
 import "./App.css";
 
@@ -125,6 +126,61 @@ function App() {
   const [newPlanName, setNewPlanName] = useState("");
   const [newTitleName, setNewTitleName] = useState("");
   const fileInputRef = useRef(null);
+  const [projectNumber, setProjectNumber] = useState("");
+
+  const handleLoadProject = async () => {
+    if (!projectNumber.trim()) return;
+    setLoading(true);
+    setStatus("Loading project...");
+    try {
+      const project = await fetchProjectByNumber(projectNumber.trim());
+      if (!project) {
+        setStatus(`Project ${projectNumber} not found.`);
+        return;
+      }
+
+      // Map project titles and encumbrances into tracker
+      const titles = {};
+      if (project.title_documents?.length > 0) {
+        project.title_documents.forEach((td) => {
+          titles[`TITLE-${td.id}`] = {
+            legal_desc: "", // you can use td.description if available
+            existing_encumbrances_on_title: td.encumbrances?.map((e) => ({
+              id: uniqueId(),
+              "Document #": e.document_number || "",
+              Description: e.description || "",
+              Signatories: e.signatories || "",
+              Action: e.action || ACTION_OPTIONS[0],
+              "Circulation Notes": e.circulation_notes || "",
+              Status: e.status || STATUS_OPTIONS[0],
+            })) || [],
+            new_agreements: [],
+            plans: {},
+          };
+        });
+      }
+
+      setTracker({
+        header: { ...PROGRAM_METADATA },
+        project_number: project.proj_num,
+        legal_desc: "",
+        existing_encumbrances_on_title: [], // optional if you want top-level encumbrances
+        new_agreements: [],
+        plans: {},
+        titles,
+      });
+
+      setPlanOrder([]);
+      setStatus(`Project ${projectNumber} loaded successfully.`);
+    } catch (error) {
+      console.error(error);
+      setStatus(`Failed to load project: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   // planEntries follow planOrder and filter out removed plans
   const planEntries = useMemo(() => {
@@ -167,51 +223,6 @@ function App() {
   }
 }, [tracker.plans, tracker.plan_order]);
 
-
-  // load tracker once on mount
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const payload = await fetchTracker();
-        if (!cancelled) {
-          if (payload) {
-            setTracker(payload);
-            // ensure planOrder includes backend plans (append any missing ones)
-            const backendKeys = Object.keys(payload.plans ?? {});
-            setPlanOrder((prev) => {
-              const merged = Array.from(new Set([...prev, ...backendKeys]));
-              // keep only keys that exist in the payload
-              return merged.filter((k) => (payload.plans ?? {})[k]);
-            });
-            setStatus("Tracker loaded from backend.");
-          } else {
-            const defaultTracker = buildDefaultTracker();
-            setTracker(defaultTracker);
-            setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-            setStatus("Backend unavailable. Using local template data.");
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error(error);
-          const defaultTracker = buildDefaultTracker();
-          setTracker(defaultTracker);
-          setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-          setStatus("Unable to reach backend. Using local template data.");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const updateTracker = (transform) => {
     setTracker((prev) => ({
@@ -417,31 +428,58 @@ function App() {
   };
 
   const reloadTracker = async () => {
+    if (!tracker.project_number?.trim()) return;
+
     setLoading(true);
     try {
-      const payload = await fetchTracker();
-      if (payload) {
-        setTracker(payload);
-        setStatus("Tracker reloaded from backend.");
-        // ensure planOrder includes backend plans
-        const backendKeys = Object.keys(payload.plans ?? {});
-        setPlanOrder((prev) => Array.from(new Set([...prev, ...backendKeys])));
+      const project = await fetchProjectByNumber(tracker.project_number.trim());
+      if (project) {
+        const titles = {};
+        if (project.title_documents?.length > 0) {
+          project.title_documents.forEach((td) => {
+            titles[`TITLE-${td.id}`] = {
+              legal_desc: "",
+              existing_encumbrances_on_title: td.encumbrances?.map((e) => ({
+                id: uniqueId(),
+                "Document #": e.document_number || "",
+                Description: e.description || "",
+                Signatories: e.signatories || "",
+                Action: e.action || ACTION_OPTIONS[0],
+                "Circulation Notes": e.circulation_notes || "",
+                Status: e.status || STATUS_OPTIONS[0],
+              })) || [],
+              new_agreements: [],
+              plans: {},
+            };
+          });
+        }
+
+        setTracker({
+          header: { ...PROGRAM_METADATA },
+          project_number: project.proj_num,
+          legal_desc: "",
+          existing_encumbrances_on_title: [],
+          new_agreements: [],
+          plans: {},
+          titles,
+        });
+        setPlanOrder([]);
+        setStatus(`Project ${tracker.project_number} loaded successfully.`);
       } else {
-        const defaultTracker = buildDefaultTracker();
-        setTracker(defaultTracker);
-        setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-        setStatus("Backend unavailable. Using local template data.");
+        setTracker(buildDefaultTracker());
+        setPlanOrder([]);
+        setStatus("Project not found. Using local template data.");
       }
     } catch (error) {
       console.error(error);
-      const defaultTracker = buildDefaultTracker();
-      setTracker(defaultTracker);
-      setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-      setStatus("Unable to load tracker data. Using template data.");
+      setTracker(buildDefaultTracker());
+      setPlanOrder([]);
+      setStatus(`Failed to load project: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
+
 
   const persistTracker = async () => {
     setLoading(true);
