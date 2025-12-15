@@ -11,6 +11,7 @@ import {
   generateDocuments,
   fetchProjectByNumber,
   fetchSurveyors,
+  createProject,
 } from "./services/docTrackerApi.js";
 import "./App.css";
 
@@ -634,20 +635,16 @@ function App() {
           </label>
           <button onClick={async () => {
             try {
-              const res = await fetch("/api/projects", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newProjectData),
-              });
-              if (!res.ok) throw new Error(await res.text());
-              const project = await res.json();
+              const project = await createProject(newProjectData);
               setShowCreateProjectModal(false);
               setTracker(prev => ({ ...prev, project_number: project.proj_num }));
               reloadTracker();
             } catch (err) {
               alert("Failed to create project: " + err.message);
             }
-          }}>Create Project</button>
+          }}>
+            Create Project
+          </button>
           <button onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
         </div>
       )}
