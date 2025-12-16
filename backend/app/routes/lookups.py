@@ -10,7 +10,7 @@ from app.schemas.lookups import (
     EncumbranceStatusResponse,
 )
 
-router = APIRouter(prefix="/lookups", tags=["Lookups"])
+router = APIRouter(prefix="/api/lookups", tags=["Lookups"])
 
 
 @router.post(

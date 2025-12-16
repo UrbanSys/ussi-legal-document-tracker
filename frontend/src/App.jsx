@@ -12,6 +12,8 @@ import {
   fetchSurveyors,
   createProject,
   updateEncumbrance,
+  fetchEncumbranceActions,
+  fetchEncumbranceStatuses,
 } from "./services/docTrackerApi.js";
 import "./App.css";
 
@@ -48,9 +50,9 @@ const createEncumbranceRow = () => ({
   "Document #": "",
   Description: "",
   Signatories: "",
-  Action: ACTION_OPTIONS[0],
+  action_id: encActions[0]?.id ?? null,
   "Circulation Notes": "",
-  Status: STATUS_OPTIONS[0],
+  status_id: encStatuses[0]?.id ?? null,
 });
 
 const createAgreementRow = () => ({
@@ -138,14 +140,16 @@ function App() {
     surveyor_id: 0,
   });
   const encumbranceSaveTimers = useRef({});
+  const [encActions, setEncActions] = useState([]);
+  const [encStatuses, setEncStatuses] = useState([]);
 
   const buildEncumbrancePayload = (row) => ({
     document_number: row["Document #"],
     description: row.Description,
     signatories: row.Signatories,
-    action: row.Action,
+    action_id: row.action_id,
     circulation_notes: row["Circulation Notes"],
-    status: row.Status,
+    status_id: row.status_id,
   });
 
 
@@ -160,6 +164,24 @@ function App() {
     };
     loadSurveyors();
   }, []);
+
+  useEffect(() => {
+    const loadEncumbranceLookups = async () => {
+      try {
+        const [actions, statuses] = await Promise.all([
+          fetchEncumbranceActions(),
+          fetchEncumbranceStatuses(),
+        ]);
+        setEncActions(actions);
+        setEncStatuses(statuses);
+      } catch (err) {
+        console.error("Failed to load encumbrance lookups:", err);
+      }
+    };
+
+    loadEncumbranceLookups();
+  }, []);
+
 
   const handleProjectNotFound = (projNum) => {
     setNewProjectData({ proj_num: projNum, name: `Project ${projNum}`, municipality: "", surveyor_id: 0 });
@@ -190,9 +212,9 @@ function App() {
               "Document #": e.document_number || "",
               Description: e.description || "",
               Signatories: e.signatories || "",
-              Action: e.action || ACTION_OPTIONS[0],
+              action_id: e.action_id,
               "Circulation Notes": e.circulation_notes || "",
-              Status: e.status || STATUS_OPTIONS[0],
+              status_id: e.status_id,
             })) || [],
             new_agreements: [],
             plans: {},
@@ -489,12 +511,10 @@ function App() {
               "Document #": e.document_number || "",
               Description: e.description || "",
               Signatories: e.signatories || "",
-              Action: e.action || ACTION_OPTIONS[0],
+              action_id: e.action_id ?? null,
               "Circulation Notes": e.circulation_notes || "",
-              Status: e.status || STATUS_OPTIONS[0],
+              status_id: e.status_id ?? null,
             })) || [],
-            new_agreements: [],
-            plans: {},
           };
         });
 
@@ -758,8 +778,8 @@ function App() {
                                         key={titleName}
                                         name={titleName} 
                                         rows={titleData.existing_encumbrances_on_title ?? []}
-                                        actionOptions={ACTION_OPTIONS}
-                                        statusOptions={STATUS_OPTIONS}
+                                        actions={encActions}
+                                        statuses={encStatuses}
                                         onFieldChange={(name, index, field, value) => {
                                           updateTracker((prev) => {
                                             const updatedTitles = { ...prev.titles };

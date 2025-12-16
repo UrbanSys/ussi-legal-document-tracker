@@ -106,3 +106,11 @@ export async function updateEncumbrance(encumbranceId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function fetchEncumbranceActions() {
+  return request("/lookups/encumbrance-actions");
+}
+
+export async function fetchEncumbranceStatuses() {
+  return request("/lookups/encumbrance-statuses");
+}

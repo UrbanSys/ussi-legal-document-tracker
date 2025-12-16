@@ -14,8 +14,8 @@ const headerLabels = [
 export function EncumbranceTable({
   name,
   rows,
-  actionOptions,
-  statusOptions,
+  actions,
+  statuses,
   onFieldChange,
   onAddRow,
   onRemoveRow,
@@ -87,14 +87,15 @@ export function EncumbranceTable({
                   </td>
                   <td>
                     <select
-                      value={row["Action"] ?? actionOptions[0]}
+                      value={row.action_id ?? ""}
                       onChange={(e) =>
-                        onFieldChange(name, index, "Action", e.target.value)
+                        onFieldChange(name, index, "action_id", Number(e.target.value))
                       }
                     >
-                      {actionOptions.map((option) => (
-                        <option value={option} key={option}>
-                          {option}
+                      <option value="">Select action</option>
+                      {actions.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.label}
                         </option>
                       ))}
                     </select>
@@ -114,14 +115,15 @@ export function EncumbranceTable({
                   </td>
                   <td>
                     <select
-                      value={row["Status"] ?? statusOptions[0]}
+                      value={row.status_id ?? ""}
                       onChange={(e) =>
-                        onFieldChange(name, index, "Status", e.target.value)
+                        onFieldChange(name, index, "status_id", Number(e.target.value))
                       }
                     >
-                      {statusOptions.map((option) => (
-                        <option value={option} key={option}>
-                          {option}
+                      <option value="">Select action</option>
+                      {statuses.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.label}
                         </option>
                       ))}
                     </select>
@@ -138,8 +140,8 @@ export function EncumbranceTable({
 
 EncumbranceTable.propTypes = {
   rows: PropTypes.arrayOf(PropTypes.object).isRequired,
-  actionOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
-  statusOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  actions: PropTypes.number.isRequired,
+  statuses: PropTypes.number.isRequired,
   onFieldChange: PropTypes.func.isRequired,
   onAddRow: PropTypes.func.isRequired,
   onRemoveRow: PropTypes.func.isRequired,
