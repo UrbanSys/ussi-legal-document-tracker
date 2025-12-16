@@ -78,7 +78,6 @@ const createPlanRow = (desc = "") => ({
 const seedPlanRows = () => [
   createPlanRow("Surveyor's Affidavit"),
   createPlanRow("Consent"),
-  createPlanRow(""),
 ];
 
 const buildDefaultTracker = () => ({
@@ -86,7 +85,7 @@ const buildDefaultTracker = () => ({
   legal_desc: "",
   existing_encumbrances_on_title: [], // start blank
   new_agreements: [createAgreementRow()],                 // start blank
-  plans: {},                          // no plans initially
+  plans: { "SUB1": seedPlanRows() },  // default SUB1 plan
   titles: {},                          // no titles initially
 });
 
@@ -119,9 +118,9 @@ function App() {
   const [planOrder, setPlanOrder] = useState(() => {
     try {
       const saved = localStorage.getItem("planOrder");
-      return saved ? JSON.parse(saved) : [];
+      return saved ? JSON.parse(saved) : ["SUB1"];
     } catch {
-      return [];
+      return ["SUB1"];
     }
   });
   const [tracker, setTracker] = useState(() => buildDefaultTracker());
@@ -228,11 +227,11 @@ function App() {
         legal_desc: "",
         existing_encumbrances_on_title: [], // optional if you want top-level encumbrances
         new_agreements: [],
-        plans: {},
+        plans: { "SUB1": seedPlanRows() },
         titles,
       });
 
-      setPlanOrder([]);
+      setPlanOrder(["SUB1"]);
       setStatus(`Project ${projectNumber} loaded successfully.`);
     } catch (error) {
       console.error(error);
@@ -524,10 +523,10 @@ function App() {
           legal_desc: "",
           existing_encumbrances_on_title: [],
           new_agreements: [],
-          plans: {},
+          plans: { "SUB1": seedPlanRows() },
           titles,
         });
-        setPlanOrder([]);
+        setPlanOrder(["SUB1"]);
         setStatus(`Project ${projNum} loaded successfully.`);
       }
     } catch (err) {
@@ -770,7 +769,7 @@ function App() {
                               {(provided) => (
                                 <div ref={provided.innerRef} {...provided.droppableProps}>
                                   {titleEntries.length === 0 ? (
-                                    <p className="empty-row">No titles defined yet.</p>
+                                    <p className="empty-row">Import Title (PDF) to populate existing encumbrances on title.</p>
                                   ) : (
                                     titleEntries.map(([titleName, titleData]) => (
                                       <EncumbranceTable
