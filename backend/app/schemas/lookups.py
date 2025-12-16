@@ -32,3 +32,16 @@ class EncumbranceStatusResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class DocumentStatusCreate(BaseModel):
+    code: str
+    label: str
+
+
+class DocumentStatusResponse(BaseModel):
+    id: int
+    code: str
+    label: str
+
+    class Config:
+        from_attributes = True
