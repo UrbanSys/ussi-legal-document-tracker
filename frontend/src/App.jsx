@@ -625,80 +625,79 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
-          <p className="eyebrow">USSI</p>
-          <h1>{PROGRAM_METADATA.program_name}</h1>
-          <p className="subhead">{PROGRAM_METADATA.program_version}</p>
+        <div className="header-brand">
+          <h1>USSI Document Tracker</h1>
+          <span className="version">{PROGRAM_METADATA.program_version}</span>
         </div>
-        <div className="header-meta">
-          <label className="field">
-            <span>Project Number</span>
-              <div className="plan-new"><input
-                className=""
-                type="text"
-                value={tracker.project_number ?? ""}
-                onChange={(e) =>
-                  updateTracker(() => ({ project_number: e.target.value }))
-                }
-                placeholder="Enter project number..."
-              />
-              <button
-                type="button"
-                onClick={reloadTracker}
-                disabled={loading || !(tracker.project_number?.trim())}
-              >
-                Load
-              </button>
-            </div>
-          </label>
+        <div className="header-project">
+          <label>Project</label>
+          <input
+            type="text"
+            value={tracker.project_number ?? ""}
+            onChange={(e) =>
+              updateTracker(() => ({ project_number: e.target.value }))
+            }
+            placeholder="Enter project #..."
+          />
+          <button
+            type="button"
+            onClick={reloadTracker}
+            disabled={loading || !(tracker.project_number?.trim())}
+          >
+            Load
+          </button>
         </div>
       </header>
 
       {showCreateProjectModal && (
-        <div className="modal">
-          <h2>Create New Project</h2>
-          <label>
-            Project Name:
+        <section className="create-project-bar">
+          <span className="bar-title">New Project</span>
+          <div className="bar-field">
+            <label>Name</label>
             <input
               type="text"
               value={newProjectData.name}
               onChange={(e) => setNewProjectData((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Project name..."
             />
-          </label>
-          <label>
-            Municipality:
+          </div>
+          <div className="bar-field">
+            <label>Municipality</label>
             <input
               type="text"
               value={newProjectData.municipality}
               onChange={(e) => setNewProjectData((prev) => ({ ...prev, municipality: e.target.value }))}
+              placeholder="Municipality..."
             />
-          </label>
-          <label>
-            Surveyor:
+          </div>
+          <div className="bar-field">
+            <label>Surveyor</label>
             <select
               value={newProjectData.surveyor_id}
               onChange={(e) => setNewProjectData((prev) => ({ ...prev, surveyor_id: Number(e.target.value) }))}
             >
-              <option value={0}>Select Surveyor</option>
+              <option value={0}>Select...</option>
               {surveyors.map((s) => (
                 <option key={s.id} value={s.id}>{s.name} ({s.city})</option>
               ))}
             </select>
-          </label>
-          <button onClick={async () => {
-            try {
-              const project = await createProject(newProjectData);
-              setShowCreateProjectModal(false);
-              setTracker(prev => ({ ...prev, project_number: project.proj_num }));
-              reloadTracker();
-            } catch (err) {
-              alert("Failed to create project: " + err.message);
-            }
-          }}>
-            Create Project
-          </button>
-          <button onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
-        </div>
+          </div>
+          <div className="bar-actions">
+            <button onClick={async () => {
+              try {
+                const project = await createProject(newProjectData);
+                setShowCreateProjectModal(false);
+                setTracker(prev => ({ ...prev, project_number: project.proj_num }));
+                reloadTracker();
+              } catch (err) {
+                alert("Failed to create project: " + err.message);
+              }
+            }}>
+              Create
+            </button>
+            <button className="btn-secondary" onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
+          </div>
+        </section>
       )}
 
 
