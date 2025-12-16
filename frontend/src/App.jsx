@@ -5,10 +5,15 @@ import PlanSection from "./components/PlanSection.jsx";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import {
-  fetchTracker,
   saveTracker,
   importTitle as importTitleApi,
   generateDocuments,
+  fetchProjectByNumber,
+  fetchSurveyors,
+  createProject,
+  updateEncumbrance,
+  fetchEncumbranceActions,
+  fetchEncumbranceStatuses,
 } from "./services/docTrackerApi.js";
 import "./App.css";
 
@@ -35,8 +40,6 @@ const PROGRAM_METADATA = {
   file_version: 1,
 };
 
-
-
 const uniqueId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
 ? crypto.randomUUID()
@@ -47,9 +50,9 @@ const createEncumbranceRow = () => ({
   "Document #": "",
   Description: "",
   Signatories: "",
-  Action: ACTION_OPTIONS[0],
+  action_id: encActions[0]?.id ?? null,
   "Circulation Notes": "",
-  Status: STATUS_OPTIONS[0],
+  status_id: encStatuses[0]?.id ?? null,
 });
 
 const createAgreementRow = () => ({
@@ -81,15 +84,10 @@ const seedPlanRows = () => [
 const buildDefaultTracker = () => ({
   header: { ...PROGRAM_METADATA },
   legal_desc: "",
-  existing_encumbrances_on_title: Array.from({ length: 3 }, () =>
-    createEncumbranceRow(),
-),
-new_agreements: [createAgreementRow()],
-plans: {
-  SUB1: seedPlanRows(),
-  URW1: seedPlanRows(),
-  ODRW1: seedPlanRows(),
-},
+  existing_encumbrances_on_title: [], // start blank
+  new_agreements: [createAgreementRow()],                 // start blank
+  plans: {},                          // no plans initially
+  titles: {},                          // no titles initially
 });
 
 function mapInstrumentsToRows(insts) {
@@ -130,13 +128,134 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [newPlanName, setNewPlanName] = useState("");
+  const [newTitleName, setNewTitleName] = useState("");
   const fileInputRef = useRef(null);
+  const [projectNumber, setProjectNumber] = useState("");
+  const [surveyors, setSurveyors] = useState([]);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [newProjectData, setNewProjectData] = useState({
+    proj_num: "",
+    name: "",
+    municipality: "",
+    surveyor_id: 0,
+  });
+  const encumbranceSaveTimers = useRef({});
+  const [encActions, setEncActions] = useState([]);
+  const [encStatuses, setEncStatuses] = useState([]);
+
+  const buildEncumbrancePayload = (row) => ({
+    document_number: row["Document #"],
+    description: row.Description,
+    signatories: row.Signatories,
+    action_id: row.action_id,
+    circulation_notes: row["Circulation Notes"],
+    status_id: row.status_id,
+  });
+
+
+  useEffect(() => {
+    const loadSurveyors = async () => {
+      try {
+        const data = await fetchSurveyors(); 
+        setSurveyors(data);
+      } catch (err) {
+        console.error("Failed to fetch surveyors:", err);
+      }
+    };
+    loadSurveyors();
+  }, []);
+
+  useEffect(() => {
+    const loadEncumbranceLookups = async () => {
+      try {
+        const [actions, statuses] = await Promise.all([
+          fetchEncumbranceActions(),
+          fetchEncumbranceStatuses(),
+        ]);
+        setEncActions(actions);
+        setEncStatuses(statuses);
+      } catch (err) {
+        console.error("Failed to load encumbrance lookups:", err);
+      }
+    };
+
+    loadEncumbranceLookups();
+  }, []);
+
+
+  const handleProjectNotFound = (projNum) => {
+    setNewProjectData({ proj_num: projNum, name: `Project ${projNum}`, municipality: "", surveyor_id: 0 });
+    setShowCreateProjectModal(true);
+  };
+
+
+  const handleLoadProject = async () => {
+    if (!projectNumber.trim()) return;
+    setLoading(true);
+    setStatus("Loading project...");
+    try {
+      const project = await fetchProjectByNumber(projectNumber.trim());
+      if (!project) {
+        setStatus(`Project ${projectNumber} not found.`);
+        return;
+      }
+
+      // Map project titles and encumbrances into tracker
+      const titles = {};
+      if (project.title_documents?.length > 0) {
+        project.title_documents.forEach((td) => {
+          titles[`TITLE-${td.id}`] = {
+            legal_desc: "", // you can use td.description if available
+            existing_encumbrances_on_title: td.encumbrances?.map((e) => ({
+              id: uniqueId(),
+              backend_id: e.id,
+              "Document #": e.document_number || "",
+              Description: e.description || "",
+              Signatories: e.signatories || "",
+              action_id: e.action_id,
+              "Circulation Notes": e.circulation_notes || "",
+              status_id: e.status_id,
+            })) || [],
+            new_agreements: [],
+            plans: {},
+          };
+        });
+      }
+
+      setTracker({
+        header: { ...PROGRAM_METADATA },
+        project_number: project.proj_num,
+        legal_desc: "",
+        existing_encumbrances_on_title: [], // optional if you want top-level encumbrances
+        new_agreements: [],
+        plans: {},
+        titles,
+      });
+
+      setPlanOrder([]);
+      setStatus(`Project ${projectNumber} loaded successfully.`);
+    } catch (error) {
+      console.error(error);
+      setStatus(`Failed to load project: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   // planEntries follow planOrder and filter out removed plans
   const planEntries = useMemo(() => {
     const plans = tracker.plans ?? {};
     return planOrder.filter((name) => plans[name]).map((name) => [name, plans[name]]);
   }, [tracker.plans, planOrder]);
+
+  // Memoized titles entries
+  const titleEntries = useMemo(() => {
+    const titles = tracker.titles ?? {};
+    return Object.entries(titles);
+  }, [tracker.titles]);
+
 
   // persist sectionOrder and planOrder when they change
   useEffect(() => {
@@ -166,51 +285,6 @@ function App() {
   }
 }, [tracker.plans, tracker.plan_order]);
 
-
-  // load tracker once on mount
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const payload = await fetchTracker();
-        if (!cancelled) {
-          if (payload) {
-            setTracker(payload);
-            // ensure planOrder includes backend plans (append any missing ones)
-            const backendKeys = Object.keys(payload.plans ?? {});
-            setPlanOrder((prev) => {
-              const merged = Array.from(new Set([...prev, ...backendKeys]));
-              // keep only keys that exist in the payload
-              return merged.filter((k) => (payload.plans ?? {})[k]);
-            });
-            setStatus("Tracker loaded from backend.");
-          } else {
-            const defaultTracker = buildDefaultTracker();
-            setTracker(defaultTracker);
-            setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-            setStatus("Backend unavailable. Using local template data.");
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error(error);
-          const defaultTracker = buildDefaultTracker();
-          setTracker(defaultTracker);
-          setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-          setStatus("Unable to reach backend. Using local template data.");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const updateTracker = (transform) => {
     setTracker((prev) => ({
@@ -346,6 +420,38 @@ function App() {
     setNewPlanName("");
   };
 
+  const handleCreateTitle = () => {
+    const cleaned = newTitleName.trim().toUpperCase();
+    if (!cleaned) return;
+
+    updateTracker((prev) => {
+      // Make sure tracker has a titles object
+      const titles = prev.titles ?? {};
+
+      if (titles[cleaned]) {
+        // title already exists, do nothing
+        return {};
+      }
+
+      // Add a new title with empty/default fields
+      return {
+        titles: {
+          ...titles,
+          [cleaned]: {
+            legal_desc: "",
+            existing_encumbrances_on_title: Array.from({ length: 3 }, () =>
+              createEncumbranceRow()
+            ),
+            new_agreements: [createAgreementRow()],
+            plans: {},
+          },
+        },
+      };
+    });
+
+    setNewTitleName("");
+  };
+
   const triggerFilePicker = () => {
     fileInputRef.current?.click();
   };
@@ -384,27 +490,54 @@ function App() {
   };
 
   const reloadTracker = async () => {
+    const projNum = tracker.project_number?.trim();
+    if (!projNum) return;
+
     setLoading(true);
+    setStatus("Loading project...");
+
     try {
-      const payload = await fetchTracker();
-      if (payload) {
-        setTracker(payload);
-        setStatus("Tracker reloaded from backend.");
-        // ensure planOrder includes backend plans
-        const backendKeys = Object.keys(payload.plans ?? {});
-        setPlanOrder((prev) => Array.from(new Set([...prev, ...backendKeys])));
-      } else {
-        const defaultTracker = buildDefaultTracker();
-        setTracker(defaultTracker);
-        setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-        setStatus("Backend unavailable. Using local template data.");
+      const project = await fetchProjectByNumber(projNum);
+
+      if (project) {
+        // Map project data into tracker
+        const titles = {};
+        project.title_documents?.forEach(td => {
+          titles[`TITLE-${td.id}`] = {
+            legal_desc: "",
+            existing_encumbrances_on_title: td.encumbrances?.map(e => ({
+              id: uniqueId(),
+              backend_id: e.id,
+              "Document #": e.document_number || "",
+              Description: e.description || "",
+              Signatories: e.signatories || "",
+              action_id: e.action_id ?? null,
+              "Circulation Notes": e.circulation_notes || "",
+              status_id: e.status_id ?? null,
+            })) || [],
+          };
+        });
+
+        setTracker({
+          header: { ...PROGRAM_METADATA },
+          project_number: project.proj_num,
+          legal_desc: "",
+          existing_encumbrances_on_title: [],
+          new_agreements: [],
+          plans: {},
+          titles,
+        });
+        setPlanOrder([]);
+        setStatus(`Project ${projNum} loaded successfully.`);
       }
-    } catch (error) {
-      console.error(error);
-      const defaultTracker = buildDefaultTracker();
-      setTracker(defaultTracker);
-      setPlanOrder(Object.keys(defaultTracker.plans ?? {}));
-      setStatus("Unable to load tracker data. Using template data.");
+    } catch (err) {
+      if (err.message.includes("404")) {
+        handleProjectNotFound(projNum);
+        setStatus(`Project ${projNum} not found. Please enter details to create a new project.`);
+      } else {
+        setStatus(`Failed to load project: ${err.message}`);
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
@@ -458,7 +591,36 @@ function App() {
       setPlanOrder(items);
       return;
     }
+
+    if (result.type === "ENCUMBRANCE_ROW") {
+      updateTracker((prev) => {
+        const rows = Array.from(prev.existing_encumbrances_on_title);
+        const [moved] = rows.splice(result.source.index, 1);
+        rows.splice(result.destination.index, 0, moved);
+        return { existing_encumbrances_on_title: rows };
+      });
+    }
   };
+
+  const debounceSaveEncumbrance = (row) => {
+    const encId = row.backend_id;
+    if (!encId) return; // new rows not yet saved on backend
+
+    // Clear existing timer
+    if (encumbranceSaveTimers.current[encId]) {
+      clearTimeout(encumbranceSaveTimers.current[encId]);
+    }
+
+    // Set new debounce timer
+    encumbranceSaveTimers.current[encId] = setTimeout(async () => {
+      try {
+        await updateEncumbrance(encId, buildEncumbrancePayload(row));
+      } catch (err) {
+        console.error(`Failed to autosave encumbrance ${encId}`, err);
+      }
+    }, 500);
+  };
+
 
   return (
     <div className="app-shell">
@@ -470,17 +632,75 @@ function App() {
         </div>
         <div className="header-meta">
           <label className="field">
-            <span>Legal Description</span>
-            <textarea
-              value={tracker.legal_desc ?? ""}
-              onChange={(e) =>
-                updateTracker(() => ({ legal_desc: e.target.value }))
-              }
-              placeholder="Enter legal description..."
-            />
+            <span>Project Number</span>
+              <div className="plan-new"><input
+                className=""
+                type="text"
+                value={tracker.project_number ?? ""}
+                onChange={(e) =>
+                  updateTracker(() => ({ project_number: e.target.value }))
+                }
+                placeholder="Enter project number..."
+              />
+              <button
+                type="button"
+                onClick={reloadTracker}
+                disabled={loading || !(tracker.project_number?.trim())}
+              >
+                Load
+              </button>
+            </div>
           </label>
         </div>
       </header>
+
+      {showCreateProjectModal && (
+        <div className="modal">
+          <h2>Create New Project</h2>
+          <label>
+            Project Name:
+            <input
+              type="text"
+              value={newProjectData.name}
+              onChange={(e) => setNewProjectData((prev) => ({ ...prev, name: e.target.value }))}
+            />
+          </label>
+          <label>
+            Municipality:
+            <input
+              type="text"
+              value={newProjectData.municipality}
+              onChange={(e) => setNewProjectData((prev) => ({ ...prev, municipality: e.target.value }))}
+            />
+          </label>
+          <label>
+            Surveyor:
+            <select
+              value={newProjectData.surveyor_id}
+              onChange={(e) => setNewProjectData((prev) => ({ ...prev, surveyor_id: Number(e.target.value) }))}
+            >
+              <option value={0}>Select Surveyor</option>
+              {surveyors.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.city})</option>
+              ))}
+            </select>
+          </label>
+          <button onClick={async () => {
+            try {
+              const project = await createProject(newProjectData);
+              setShowCreateProjectModal(false);
+              setTracker(prev => ({ ...prev, project_number: project.proj_num }));
+              reloadTracker();
+            } catch (err) {
+              alert("Failed to create project: " + err.message);
+            }
+          }}>
+            Create Project
+          </button>
+          <button onClick={() => setShowCreateProjectModal(false)}>Cancel</button>
+        </div>
+      )}
+
 
       <section className="toolbar">
         <div className="toolbar__group">
@@ -505,7 +725,7 @@ function App() {
           />
         </div>
         <div className="status-line">
-          {loading ? "Working..." : status || "Ready."}
+          {loading ? "Working..." : status || ""}
         </div>
       </section>
 
@@ -528,15 +748,108 @@ function App() {
                         }}
                       >
                         {sec === "encumbrances" && (
-                          <EncumbranceTable
-                            rows={tracker.existing_encumbrances_on_title ?? []}
-                            actionOptions={ACTION_OPTIONS}
-                            statusOptions={STATUS_OPTIONS}
-                            onFieldChange={handleEncFieldChange}
-                            onAddRow={addEncRow}
-                            onRemoveRow={removeEncRow}
-                          />
+                          <section className="plan-section">
+                            <div className="plan-header">
+                              <h2>Existing Encumbrances on Title</h2>
+                              <div className="plan-new">
+                                <input
+                                  value={newTitleName}
+                                  onChange={(e) => setNewTitleName(e.target.value)}
+                                  placeholder="Title Number"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleCreateTitle}
+                                  disabled={!newTitleName.trim()}
+                                >
+                                  + Title
+                                </button>
+                              </div>
+                            </div>
+
+                            <Droppable droppableId="encumbrances" type="ENCUMBRANCE_ROW">
+                              {(provided) => (
+                                <div ref={provided.innerRef} {...provided.droppableProps}>
+                                  {titleEntries.length === 0 ? (
+                                    <p className="empty-row">No titles defined yet.</p>
+                                  ) : (
+                                    titleEntries.map(([titleName, titleData]) => (
+                                      <EncumbranceTable
+                                        key={titleName}
+                                        name={titleName} 
+                                        rows={titleData.existing_encumbrances_on_title ?? []}
+                                        actions={encActions}
+                                        statuses={encStatuses}
+                                        onFieldChange={(name, index, field, value) => {
+                                          updateTracker((prev) => {
+                                            const updatedTitles = { ...prev.titles };
+                                            const rows = updatedTitles[titleName].existing_encumbrances_on_title;
+
+                                            const updatedRow = {
+                                              ...rows[index],
+                                              [field]: value,
+                                            };
+                                            
+                                            updatedTitles[titleName] = {
+                                              ...updatedTitles[titleName],
+                                              existing_encumbrances_on_title: rows.map((row, i) =>
+                                                i === index ? { ...row, [field]: value } : row
+                                              ),
+                                            };
+                                            debounceSaveEncumbrance(updatedRow);
+                                            return { titles: updatedTitles };
+                                          });
+                                        }}
+                                        onAddRow={(name) => {
+                                          updateTracker((prev) => {
+                                            const rows = prev.titles[titleName].existing_encumbrances_on_title ?? [];
+                                            return {
+                                              titles: {
+                                                ...prev.titles,
+                                                [titleName]: {
+                                                  ...prev.titles[titleName],
+                                                  existing_encumbrances_on_title: [...rows, createEncumbranceRow()],
+                                                },
+                                              },
+                                            };
+                                          });
+                                        }}
+                                        onRemoveRow={(name) => {
+                                          updateTracker((prev) => {
+                                            const rows = prev.titles[titleName].existing_encumbrances_on_title ?? [];
+                                            return {
+                                              titles: {
+                                                ...prev.titles,
+                                                [titleName]: {
+                                                  ...prev.titles[titleName],
+                                                  existing_encumbrances_on_title: rows.slice(
+                                                    0,
+                                                    Math.max(rows.length - 1, 0)
+                                                  ),
+                                                },
+                                              },
+                                            };
+                                          });
+                                        }}
+                                        onRemoveTitle={(name) => {
+                                          // remove the entire title
+                                          updateTracker((prev) => {
+                                            const updatedTitles = { ...prev.titles };
+                                            delete updatedTitles[titleName];
+                                            return { titles: updatedTitles };
+                                          });
+                                        }}
+                                      />
+                                    )))}
+
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </section>
                         )}
+
+
                         {sec === "agreements" && (
                           <AgreementsTable
                             rows={tracker.new_agreements ?? []}

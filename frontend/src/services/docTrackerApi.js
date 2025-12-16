@@ -69,3 +69,48 @@ export async function generateDocuments(payload) {
     throw error;
   }
 }
+
+export async function fetchProjectByNumber(projNum) {
+  if (!projNum) throw new Error("Project number is required");
+  return await request(`/projects/by-number/${encodeURIComponent(projNum)}`);
+}
+
+export async function fetchSurveyors() {
+  return await request("/projects/surveyors", {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function createProject(projectData) {
+  try {
+    return await request("/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(projectData),
+    });
+  } catch (error) {
+    console.error("Project creation failed:", error.message);
+    throw error;
+  }
+}
+
+export async function updateEncumbrance(encumbranceId, payload) {
+  if (!encumbranceId) {
+    throw new Error("Encumbrance ID is required");
+  }
+
+  return await request(`/titles/encumbrances/${encumbranceId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchEncumbranceActions() {
+  return request("/lookups/encumbrance-actions");
+}
+
+export async function fetchEncumbranceStatuses() {
+  return request("/lookups/encumbrance-statuses");
+}
