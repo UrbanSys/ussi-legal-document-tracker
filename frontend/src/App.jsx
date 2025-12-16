@@ -152,8 +152,7 @@ function App() {
   useEffect(() => {
     const loadSurveyors = async () => {
       try {
-        const data = await fetchSurveyors();
-        console.log(data)
+        const data = await fetchSurveyors(); 
         setSurveyors(data);
       } catch (err) {
         console.error("Failed to fetch surveyors:", err);
