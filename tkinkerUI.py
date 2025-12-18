@@ -13,9 +13,13 @@ from docsignview import HandleActions
 from tkinter import filedialog as fd
 import os
 
+def is_frozen():
+    return getattr(sys, 'frozen', False)
+
 try:
-    import genVersionNumber
-    genVersionNumber.gen_version_info()
+    if not is_frozen():
+        import genVersionNumber
+        genVersionNumber.gen_version_info()
     from version_info import __VERSION_TEXT__
 except ImportError:
     __VERSION_TEXT__ = "***version info unavalible***"

@@ -9,3 +9,6 @@ version_info.py
 /frontend/.vite
 /frontend/node_modules
 backend/.env
+/build
+/dist
+*.spec
