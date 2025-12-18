@@ -69,7 +69,6 @@ class DocumentTaskBase(BaseModel):
     signatories: Optional[str] = None
     condition_of_approval: Optional[str] = None
     circulation_notes: Optional[str] = None
-    encumbrance_id: Optional[int] = None
     category_id: int
     document_status_id: Optional[int] = None
     legal_document_template_id: Optional[int] = None
@@ -102,6 +101,20 @@ class DocumentTaskResponse(DocumentTaskBase):
     document_status: Optional[DocumentTaskStatusResponse] = None
     legal_document_template: Optional[LegalDocumentTemplateResponse] = None
     legal_document: Optional[LegalDocumentResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+# Pydantic schema
+class DocumentCategoryCreate(BaseModel):
+    code: str
+    name: str
+
+class DocumentCategoryResponse(BaseModel):
+    id: int
+    code: str
+    name: str
 
     class Config:
         from_attributes = True

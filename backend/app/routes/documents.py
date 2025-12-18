@@ -4,11 +4,13 @@ API routes for document task and document generation endpoints.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import DocumentTask, LegalDocument
+from app.models import DocumentTask, LegalDocument, DocumentCategory
 from app.schemas.document import (
     DocumentTaskCreate,
     DocumentTaskUpdate,
     DocumentTaskResponse,
+    DocumentCategoryCreate,
+    DocumentCategoryResponse,
 )
 from typing import List
 
@@ -37,7 +39,7 @@ def list_document_tasks(
 ):
     """Get all document tasks for a project."""
     tasks = (
-        db.query(DocumentTask)
+        db.query(DocumentTask).order_by(DocumentTask.id)
         .filter(DocumentTask.project_id == project_id)
         .offset(skip)
         .limit(limit)
@@ -45,6 +47,20 @@ def list_document_tasks(
     )
     return tasks
 
+@router.post("/category", response_model=DocumentCategoryResponse)
+def create_category(category: DocumentCategoryCreate, db: Session = Depends(get_db)):
+    db_category = DocumentCategory(**category.dict())
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+
+@router.get("/category", response_model=List[DocumentCategoryResponse])
+def list_document_categories(db: Session = Depends(get_db)):
+    """Get all document categories."""
+    categories = db.query(DocumentCategory).order_by(DocumentCategory.id).all()
+    return categories
 
 @router.get("/{task_id}", response_model=DocumentTaskResponse)
 def get_document_task(task_id: int, db: Session = Depends(get_db)):
