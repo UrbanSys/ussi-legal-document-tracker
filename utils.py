@@ -72,9 +72,9 @@ def process_title_cert(pdf_reader):
 
 
     # Instruments  
-    m_rn = re.compile(r'[\d]{3} [\d]{3} [\d]{3}')
+    m_rn = re.compile(r'[\d]{3} [\d]{3} [\d]{3}|\d{2,}[A-Za-z]{2,}')
     m_date = re.compile(r'[\d]{2}/[0-9]{2}/[\d]{4}')
-    m_inst = re.compile(r'(?:[A-Z]+ ?)+')
+    m_inst = re.compile(r'(?:[A-Z]{3,}(?: [A-Z]+)*)')
     
     inst_start_index = 0
     inst_end_index = 0
@@ -92,12 +92,16 @@ def process_title_cert(pdf_reader):
         has_date=False
         has_rn=False
         end_of_inst = False
-        result_rn = m_rn.search(i)
-        if result_rn:
-            has_rn=True
+        line_for_rn = i
         result_date = m_date.search(i)
         if result_date:
             has_date=True
+            temp_date = result_date.group()
+            line_for_rn = i.replace(temp_date, " ")
+        result_rn = m_rn.search(line_for_rn)
+        print(line_for_rn)
+        if result_rn:
+            has_rn=True
         if "TOTAL INSTRUMENTS" in i:
             end_of_inst = True
         if has_rn and has_date:
