@@ -2,6 +2,7 @@
 API routes for project management endpoints.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.project import Project, SurveyorALS
@@ -14,7 +15,8 @@ from app.schemas.project import (
     SurveyorResponse,
 )
 from typing import List
-
+import io
+from app.services.excel_generator import ExcelGeneratorService
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
@@ -150,3 +152,75 @@ def delete_project(project_id: int, db: Session = Depends(get_db)):
 
     db.delete(db_project)
     db.commit()
+
+
+@router.get(
+    "/{project_id}/export-excel",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "content": {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "Excel export",
+        }
+    },
+)
+def export_project_excel(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    encumbrances = {}
+
+    for title_doc in project.title_documents:
+        plan_name = f"Title Document {title_doc.id}"
+
+        encumbrances[plan_name] = [
+            {
+                "Document #": e.document_number,
+                "Description": e.description,
+                "Signatories": e.signatories,
+                "Circulation Notes": e.circulation_notes,
+                "Action": e.action.code if e.action else "",
+                "Status": e.status.code if e.status else "",
+            }
+            for e in title_doc.encumbrances
+        ]
+
+    plans = {
+        "Document Tasks": [
+            {
+                "Document/Desc": d.doc_desc,
+                "Copies/Dept": d.copies_dept,
+                "Signatories": d.signatories,
+                "Condition of Approval": d.condition_of_approval,
+                "Circulation Notes": d.circulation_notes,
+                "Status": d.document_status.code if d.document_status else "",
+            }
+            for d in project.document_tasks
+        ]
+    }
+
+    buffer = io.BytesIO()
+
+    ExcelGeneratorService.export_as_excel(
+        buffer,
+        encumbrances=encumbrances,
+        plans=plans,
+        new_agreements=[],        # per your note
+        proj_num=project.proj_num,
+    )
+
+    buffer.seek(0)
+
+    filename = f"{project.proj_num}_document_tracking.xlsx"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        },
+    )
