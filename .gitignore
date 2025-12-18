@@ -6,3 +6,4 @@ version_info.py
 *.sqlite3
 *.db    
 backend/env
+/frontend/.vite/deps
