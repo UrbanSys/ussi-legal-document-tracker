@@ -1,2 +1,11 @@
 version_info.py
 /__pycache__
+/backend/app/__pycache__
+/backend/app/models/__pycache__
+/backend/app/routes/__pycache__
+/backend/app/schemas/__pycache__
+/backend/app/services/__pycache__
+/backend/uploads
+/frontend/.vite
+/frontend/node_modules
+backend/.env

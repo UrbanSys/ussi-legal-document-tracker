@@ -8,8 +8,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from actions import DocTrackerActions
+from utils import export_as_excel
 from docsignview import HandleActions
 from tkinter import filedialog as fd
+import os
 
 try:
     import genVersionNumber
@@ -98,7 +100,7 @@ class tkinterUI(tk.Tk):
         button.grid(row=0, column=2)
         button = tk.Button(bottom_view,text="Generate Documents from Templates",command=self.gen_docs)
         button.grid(row=0, column=3)
-        button = tk.Button(bottom_view,text="Button",command=self.dummy)
+        button = tk.Button(bottom_view,text="Export as Excel File",command=self.export_excel)
         button.grid(row=0, column=4)
 
         self.regrid_rows()
@@ -232,8 +234,29 @@ class tkinterUI(tk.Tk):
                 row_widgets["Status_Val"].set("Prepared")
         self.regrid_rows()
 
-    def dummy(self):
-        mb.showinfo("message","message")
+    def export_excel(self):
+        file_path = fd.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("xlsx files", "*.xlsx"), ("All files", "*.*")],
+            title="Save xlsx File"
+        )
+
+        if file_path:
+            ui_state = self.get_ui_state()
+            """
+            ui_state = {
+                "existing_encumbrances_on_title": [],
+                "new_agreements": [],
+                "plans": {},
+                "legal_desc": ""
+            }
+            """
+            group_title = {
+                "Title A:": ui_state["existing_encumbrances_on_title"]
+            }
+            export_as_excel(file_path,group_title,ui_state["plans"],ui_state["new_agreements"])
+            os.startfile(file_path)
+
 
     def gen_docs(self):
         self.app.set_app_state(self.get_ui_state())

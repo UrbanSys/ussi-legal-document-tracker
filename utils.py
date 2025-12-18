@@ -5,6 +5,7 @@ Contains various methods to process data, including title docs, instruments, and
 """
 
 import re
+import xlsxwriter
 
 class FileReadError(Exception):
     """Custom exception for file read errors."""
@@ -215,3 +216,93 @@ def load_config(config_file):
         print("Unable to read file!")
 
     return (full_discharges,partial_discharges,consents)
+
+def export_as_excel(filename,encumbrances = [], plans = {}, new_agreements = []):
+    print("exporting")
+
+    #print(encumbrances)
+    #print(plans)
+    #print(new_agreements)
+    workbook = xlsxwriter.Workbook(filename)
+    worksheet = workbook.add_worksheet()
+
+    title_format = workbook.add_format(
+        {
+            "bold": 1,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#424242",
+            "font_color": "white",
+        }
+    )
+
+    section_format = workbook.add_format(
+        {
+            "bold": 1,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#CC9A62",
+            "font_color": "black",
+        }
+    )
+
+    worksheet.set_column("A:A", 25)
+    worksheet.set_column("B:B", 25)
+    worksheet.set_column("C:C", 40)
+    worksheet.set_column("D:D", 40)
+    worksheet.set_column("E:E", 28)
+    worksheet.set_column("F:F", 45)
+    worksheet.set_column("G:G", 33)
+
+    row = 0
+    write_header_row(worksheet, row,7,title_format,"0000.0000.00 - PROJECT - DOCUMENT TRACKING")
+    row += 1
+    for plan_name, title in encumbrances.items():
+        write_header_row(worksheet, row,7,section_format,"EXISTING ENCUMBRANCES ON TITLE - %s"%plan_name)
+        row += 1
+        table_keys = title[0].keys()
+        worksheet.write(row,0,"Item #",title_format)
+        for index, key in enumerate(table_keys):
+            worksheet.write(row,index+1,key,title_format)
+        row +=1
+        for item_no, line in enumerate(title):
+            worksheet.write(row,0,item_no)
+            for index, key in enumerate(table_keys):
+                if key in line:
+                    worksheet.write(row,index+1,line[key])
+            row+=1
+
+    for plan_name, plan in plans.items():
+        write_header_row(worksheet, row,7,section_format,"PLAN - %s"%plan_name)
+        row += 1
+        table_keys = plan[0].keys()
+        worksheet.write(row,0,"Item #",title_format)
+        for index, key in enumerate(table_keys):
+            worksheet.write(row,index+1,key,title_format)
+        row +=1
+        for item_no, line in enumerate(plan):
+            worksheet.write(row,0,item_no)
+            for index, key in enumerate(table_keys):
+                if key in line:
+                    worksheet.write(row,index+1,line[key])
+            row+=1
+
+
+    write_header_row(worksheet, row,7,section_format,"NEW AGREEMENTS CONCURRENT WITH REGISTRATION")
+    row += 1
+    table_keys = new_agreements[0].keys()
+    worksheet.write(row,0,"Item #",title_format)
+    for index, key in enumerate(table_keys):
+        worksheet.write(row,index+1,key,title_format)
+    row +=1
+    for item_no, line in enumerate(new_agreements):
+        worksheet.write(row,0,item_no)
+        for index, key in enumerate(table_keys):
+            if key in line:
+                worksheet.write(row,index+1,line[key])
+        row+=1
+
+    workbook.close() 
+
+def write_header_row(worksheet, row, col_width,format,text):
+    worksheet.merge_range(row,0,row,col_width-1,text,format)
