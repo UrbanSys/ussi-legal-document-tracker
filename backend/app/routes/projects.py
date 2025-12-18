@@ -189,8 +189,13 @@ def export_project_excel(project_id: int, db: Session = Depends(get_db)):
             for e in title_doc.encumbrances
         ]
 
-    plans = {
-        "Document Tasks": [
+    plans: Dict[str, list[dict]] = {}
+
+    for d in project.document_tasks:
+        category_code = d.category.code if d.category else "UNCATEGORIZED"
+        if category_code not in plans:
+            plans[category_code] = []
+        plans[category_code].append(
             {
                 "Document/Desc": d.doc_desc,
                 "Copies/Dept": d.copies_dept,
@@ -199,9 +204,7 @@ def export_project_excel(project_id: int, db: Session = Depends(get_db)):
                 "Circulation Notes": d.circulation_notes,
                 "Status": d.document_status.code if d.document_status else "",
             }
-            for d in project.document_tasks
-        ]
-    }
+        )
 
     buffer = io.BytesIO()
 

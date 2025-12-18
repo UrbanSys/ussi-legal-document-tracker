@@ -40,7 +40,23 @@ class ExcelGeneratorService:
             }
         )
 
-        base_format = workbook.add_format({"border": 1})
+        base_format = workbook.add_format(
+            {
+                "border": 1,
+                'text_wrap': True,
+                "valign": "vcenter",
+                "align": "left",
+             },
+        )
+
+        a_format = workbook.add_format(
+            {
+                "border": 1,
+                'text_wrap': True,
+                "valign": "vcenter",
+                "align": "center",
+             },
+        )
 
         worksheet.set_column("A:A", 25)
         worksheet.set_column("B:B", 25)
@@ -70,11 +86,13 @@ class ExcelGeneratorService:
             firstrow = row+1
             row +=1
             for item_no, line in enumerate(title):
-                worksheet.write(row,0,item_no+1,base_format)
+                worksheet.write(row,0,item_no+1,a_format)
                 for index, key in enumerate(table_keys):
                     if key in line:
                         if key == "Action":
                             line[key] = line[key].upper()
+                        if line[key]:
+                            line[key] = line[key].rstrip()
                         worksheet.write(row,index+1,line[key],base_format)
                 row+=1
             lastrow = row-1
@@ -106,9 +124,11 @@ class ExcelGeneratorService:
             firstrow = row+1
             row +=1
             for item_no, line in enumerate(plan):
-                worksheet.write(row,0,item_no+1,base_format)
+                worksheet.write(row,0,item_no+1,a_format)
                 for index, key in enumerate(table_keys):
                     if key in line:
+                        if line[key]:
+                            line[key] = line[key].rstrip()
                         worksheet.write(row,index+1,line[key],base_format)
                 row+=1
             lastrow = row-1
@@ -132,9 +152,11 @@ class ExcelGeneratorService:
         firstrow = row+1
         row +=1
         for item_no, line in enumerate(new_agreements):
-            worksheet.write(row,0,item_no+1,base_format)
+            worksheet.write(row,0,item_no+1,a_format)
             for index, key in enumerate(table_keys):
                 if key in line:
+                    if line[key]:
+                            line[key] = line[key].rstrip()
                     worksheet.write(row,index+1,line[key],base_format)
             row+=1
 
