@@ -7,11 +7,12 @@ import json
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
+from tkinter import simpledialog
 from actions import DocTrackerActions
 from utils import export_as_excel
 from docsignview import HandleActions
 from tkinter import filedialog as fd
-import os
+import os, sys
 
 def is_frozen():
     return getattr(sys, 'frozen', False)
@@ -102,7 +103,7 @@ class tkinterUI(tk.Tk):
         button.grid(row=0, column=1)
         button = tk.Button(bottom_view,text="Load",command=self.load_tracker)
         button.grid(row=0, column=2)
-        button = tk.Button(bottom_view,text="Generate Documents from Templates",command=self.gen_docs)
+        button = tk.Button(bottom_view,text="Add Plan",command=self.gen_docs)
         button.grid(row=0, column=3)
         button = tk.Button(bottom_view,text="Export as Excel File",command=self.export_excel)
         button.grid(row=0, column=4)
@@ -263,12 +264,14 @@ class tkinterUI(tk.Tk):
 
 
     def gen_docs(self):
+        code = simpledialog.askstring("New Plan", "New Plan Code?", parent=self)
+
+        if not code:
+            return
+        
+        self.add_new_plan(code)
         self.app.set_app_state(self.get_ui_state())
-        self.docview.determine_documents_to_sign()
-        if not self.docview.is_view_empty():
-            self.docview.generate_documents_gui(self)
-        else:
-            mb.showerror("No actions set!", "No actions are currently set. Please choose actions in order to generate legal documents.")
+        self.load_ui_state(self.app.get_app_state())
 
     def load_instruments_on_title(self):
         filepath = fd.askopenfilename(
