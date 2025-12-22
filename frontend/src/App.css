@@ -256,11 +256,30 @@ button.danger:hover {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.plan-new select {
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  padding: 0.6rem 1rem;
+  min-width: 220px;
+  background: #fff;
+  cursor: pointer;
 }
 
 .plan-new input {
   border-radius: 999px;
   border: 1px solid #cbd5f5;
   padding: 0.6rem 1rem;
-  min-width: 200px;
+  min-width: 120px;
+}
+
+.plan-new .btn-secondary {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.plan-new .btn-secondary:hover {
+  background: #cbd5e1;
 }
