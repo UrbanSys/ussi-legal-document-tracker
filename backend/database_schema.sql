@@ -91,7 +91,7 @@ CREATE TABLE LegalDocument (
 -- 4. Encumbrances (Existing Encumbrances on Title table)
 ------------------------------------------------------------
 
-CREATE TABLE Encumbrance (
+CREATE TABLE EncumbranceRow (
     Id                INT IDENTITY(1,1) PRIMARY KEY,
     TitleDocumentId   INT NOT NULL,
     ItemNo            INT NOT NULL,
@@ -103,14 +103,14 @@ CREATE TABLE Encumbrance (
     StatusId          INT NULL,          -- FK → EncumbranceStatus
     CirculationNotes  NVARCHAR(MAX) NULL,
     LegalDocumentId   INT NULL,          -- FK → LegalDocument (once created) - might remove?
-    CONSTRAINT FK_Encumbrance_TitleDocument
+    CONSTRAINT FK_EncumbranceRow_TitleDocument
         FOREIGN KEY (TitleDocumentId) REFERENCES TitleDocument(Id)
         ON DELETE CASCADE,
-    CONSTRAINT FK_Encumbrance_Action
+    CONSTRAINT FK_EncumbranceRow_Action
         FOREIGN KEY (ActionId) REFERENCES EncumbranceAction(Id),
-    CONSTRAINT FK_Encumbrance_Status
+    CONSTRAINT FK_EncumbranceRow_Status
         FOREIGN KEY (StatusId) REFERENCES EncumbranceStatus(Id),
-    CONSTRAINT FK_Encumbrance_LegalDocument
+    CONSTRAINT FK_EncumbranceRow_LegalDocument
         FOREIGN KEY (LegalDocumentId) REFERENCES LegalDocument(Id)
 );
 
@@ -118,11 +118,10 @@ CREATE TABLE Encumbrance (
 -- 5. DocumentTasks (Subdivision / URW / New Agreements tables)
 ------------------------------------------------------------
 
-CREATE TABLE DocumentTask (
+CREATE TABLE DocumentTaskRow (
     Id                        INT IDENTITY(1,1) PRIMARY KEY,
     ProjectId                 INT NOT NULL,
-    EncumbranceId             INT NULL,   -- if tied to a specific encumbrance
-    CategoryId                INT NOT NULL,   -- FK → DocumentCategory
+    CategoryId                INT NULL,             -- FK → DocumentCategory (NULL = New Agreements)
     ItemNo                    INT NOT NULL,
     DocDesc                   NVARCHAR(500) NULL,   -- "Document/Desc"
     CopiesDept                NVARCHAR(200) NULL,   -- "copies/dept"
@@ -132,18 +131,16 @@ CREATE TABLE DocumentTask (
     DocumentStatusId          INT NULL,         -- FK → DocumentTaskStatus
     LegalDocumentTemplateId   INT NULL,         -- FK → LegalDocumentTemplate
     LegalDocumentId           INT NULL,         -- FK → LegalDocument (when signed/registered)
-    CONSTRAINT FK_DocumentTask_Project
+    CONSTRAINT FK_DocumentTaskRow_Project
         FOREIGN KEY (ProjectId) REFERENCES Project(Id)
         ON DELETE CASCADE,
-    CONSTRAINT FK_DocumentTask_Encumbrance
-        FOREIGN KEY (EncumbranceId) REFERENCES Encumbrance(Id),
-    CONSTRAINT FK_DocumentTask_Category
+    CONSTRAINT FK_DocumentTaskRow_Category
         FOREIGN KEY (CategoryId) REFERENCES DocumentCategory(Id),
-    CONSTRAINT FK_DocumentTask_Status
+    CONSTRAINT FK_DocumentTaskRow_Status
         FOREIGN KEY (DocumentStatusId) REFERENCES DocumentTaskStatus(Id),
-    CONSTRAINT FK_DocumentTask_Template
+    CONSTRAINT FK_DocumentTaskRow_Template
         FOREIGN KEY (LegalDocumentTemplateId) REFERENCES LegalDocumentTemplate(Id),
-    CONSTRAINT FK_DocumentTask_LegalDocument
+    CONSTRAINT FK_DocumentTaskRow_LegalDocument
         FOREIGN KEY (LegalDocumentId) REFERENCES LegalDocument(Id)
 );
 
