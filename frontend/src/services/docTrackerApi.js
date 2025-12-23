@@ -16,31 +16,6 @@ async function request(path, options = {}) {
   return response.json();
 }
 
-export async function fetchTracker() {
-  try {
-    return await request("/tracker");
-  } catch (error) {
-    console.warn("Falling back to local tracker data:", error.message);
-    return null;
-  }
-}
-
-export async function saveTracker(trackerState) {
-  try {
-    await request("/tracker", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(trackerState),
-    });
-    return true;
-  } catch (error) {
-    console.error("Unable to persist tracker:", error.message);
-    return false;
-  }
-}
-
 export async function importTitle(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -95,6 +70,14 @@ export async function createProject(projectData) {
   }
 }
 
+export async function createEncumbrance(payload) {
+  return await request("/titles/encumbrances", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function updateEncumbrance(encumbranceId, payload) {
   if (!encumbranceId) {
     throw new Error("Encumbrance ID is required");
@@ -104,6 +87,17 @@ export async function updateEncumbrance(encumbranceId, payload) {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+// Encumbrance Endpoints - remove this? do we need be able to delete these?
+export async function deleteEncumbrance(encumbranceId) {
+  if (!encumbranceId) {
+    throw new Error("Encumbrance ID is required");
+  }
+
+  return await request(`/titles/encumbrances/${encumbranceId}`, {
+    method: "DELETE",
   });
 }
 

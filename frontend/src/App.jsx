@@ -5,13 +5,14 @@ import PlanSection from "./components/PlanSection.jsx";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 import {
-  saveTracker,
   importTitle as importTitleApi,
   generateDocuments,
   fetchProjectByNumber,
   fetchSurveyors,
   createProject,
+  createEncumbrance,
   updateEncumbrance,
+  deleteEncumbrance,
   fetchEncumbranceActions,
   fetchEncumbranceStatuses,
   fetchDocumentCategories,
@@ -290,8 +291,19 @@ function App() {
       const documentTasks = await fetchDocumentTasks(project.id);
       const { newAgreements, plans } = organizeDocumentTasks(documentTasks, docCategories);
 
-      // If no new agreements exist, create default empty row
-      const finalNewAgreements = newAgreements.length > 0 ? newAgreements : [createAgreementRow()];
+      // If no new agreements exist, create default empty row in backend
+      let finalNewAgreements = newAgreements;
+      if (newAgreements.length === 0) {
+        const defaultRow = createAgreementRow();
+        try {
+          const payload = buildDocumentTaskPayload(defaultRow, project.id, null, 1);
+          const created = await createDocumentTask(payload);
+          defaultRow.backend_id = created.id;
+        } catch (err) {
+          console.error("Failed to create default agreement row:", err);
+        }
+        finalNewAgreements = [defaultRow];
+      }
       
       // Build plan order from existing plans
       const existingPlanKeys = Object.keys(plans);
@@ -752,8 +764,19 @@ function App() {
         const documentTasks = await fetchDocumentTasks(project.id);
         const { newAgreements, plans } = organizeDocumentTasks(documentTasks, docCategories);
 
-        // If no new agreements exist, create default empty row
-        const finalNewAgreements = newAgreements.length > 0 ? newAgreements : [createAgreementRow()];
+        // If no new agreements exist, create default empty row in backend
+        let finalNewAgreements = newAgreements;
+        if (newAgreements.length === 0) {
+          const defaultRow = createAgreementRow();
+          try {
+            const payload = buildDocumentTaskPayload(defaultRow, project.id, null, 1);
+            const created = await createDocumentTask(payload);
+            defaultRow.backend_id = created.id;
+          } catch (err) {
+            console.error("Failed to create default agreement row:", err);
+          }
+          finalNewAgreements = [defaultRow];
+        }
         
         // Build plan order from existing plans
         const existingPlanKeys = Object.keys(plans);
@@ -778,20 +801,6 @@ function App() {
         setStatus(`Failed to load project: ${err.message}`);
         console.error(err);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const persistTracker = async () => {
-    setLoading(true);
-    try {
-      const ok = await saveTracker(tracker);
-      setStatus(
-        ok
-          ? "Tracker saved successfully."
-          : "Unable to save tracker. See server logs.",
-      );
     } finally {
       setLoading(false);
     }
@@ -964,9 +973,6 @@ function App() {
           <button onClick={triggerFilePicker} disabled={loading}>
             Import Title (PDF)
           </button>
-          <button onClick={persistTracker} disabled={loading}>
-            Save Tracker
-          </button>
           <button onClick={reloadTracker} disabled={loading}>
             Reload Tracker
           </button>
@@ -1064,7 +1070,29 @@ function App() {
                                             return { titles: updatedTitles };
                                           });
                                         }}
-                                        onAddRow={(name) => {
+                                        onAddRow={async (name) => {
+                                          const newRow = createEncumbranceRow();
+                                          // Extract title_document_id from titleName (format: "TITLE-123")
+                                          const titleDocId = parseInt(titleName.replace("TITLE-", ""), 10);
+                                          
+                                          // Create in backend
+                                          if (titleDocId) {
+                                            try {
+                                              const rows = tracker.titles[titleName]?.existing_encumbrances_on_title ?? [];
+                                              const created = await createEncumbrance({
+                                                title_document_id: titleDocId,
+                                                item_no: rows.length + 1,
+                                                document_number: "",
+                                                description: "",
+                                                signatories: "",
+                                                circulation_notes: "",
+                                              });
+                                              newRow.backend_id = created.id;
+                                            } catch (err) {
+                                              console.error("Failed to create encumbrance:", err);
+                                            }
+                                          }
+
                                           updateTracker((prev) => {
                                             const rows = prev.titles[titleName].existing_encumbrances_on_title ?? [];
                                             return {
@@ -1072,23 +1100,37 @@ function App() {
                                                 ...prev.titles,
                                                 [titleName]: {
                                                   ...prev.titles[titleName],
-                                                  existing_encumbrances_on_title: [...rows, createEncumbranceRow()],
+                                                  existing_encumbrances_on_title: [...rows, newRow],
                                                 },
                                               },
                                             };
                                           });
                                         }}
-                                        onRemoveRow={(name) => {
+                                        onRemoveRow={async (name) => {
+                                          const rows = tracker.titles[titleName]?.existing_encumbrances_on_title ?? [];
+                                          if (rows.length === 0) return;
+                                          
+                                          const lastRow = rows[rows.length - 1];
+                                          
+                                          // Delete from backend if has backend_id
+                                          if (lastRow.backend_id) {
+                                            try {
+                                              await deleteEncumbrance(lastRow.backend_id);
+                                            } catch (err) {
+                                              console.error("Failed to delete encumbrance:", err);
+                                            }
+                                          }
+
                                           updateTracker((prev) => {
-                                            const rows = prev.titles[titleName].existing_encumbrances_on_title ?? [];
+                                            const currentRows = prev.titles[titleName].existing_encumbrances_on_title ?? [];
                                             return {
                                               titles: {
                                                 ...prev.titles,
                                                 [titleName]: {
                                                   ...prev.titles[titleName],
-                                                  existing_encumbrances_on_title: rows.slice(
+                                                  existing_encumbrances_on_title: currentRows.slice(
                                                     0,
-                                                    Math.max(rows.length - 1, 0)
+                                                    Math.max(currentRows.length - 1, 0)
                                                   ),
                                                 },
                                               },
