@@ -1,7 +1,23 @@
+import type {
+  Project,
+  Surveyor,
+  Encumbrance,
+  EncumbranceAction,
+  EncumbranceStatus,
+  DocumentCategory,
+  DocumentTask,
+  CreateProjectPayload,
+  EncumbranceCreatePayload,
+  EncumbranceUpdatePayload,
+  DocumentTaskCreatePayload,
+  DocumentTaskUpdatePayload,
+  ImportTitleResponse,
+} from '../types';
+
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
 
-async function request(path, options = {}) {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
   const response = await fetch(url, options);
   if (!response.ok) {
@@ -11,26 +27,26 @@ async function request(path, options = {}) {
     );
   }
   if (response.status === 204) {
-    return null;
+    return null as T;
   }
   return response.json();
 }
 
-export async function importTitle(file) {
+export async function importTitle(file: File): Promise<ImportTitleResponse> {
   const formData = new FormData();
   formData.append("file", file);
   try {
-    return await request("/import-title", {
+    return await request<ImportTitleResponse>("/import-title", {
       method: "POST",
       body: formData,
     });
   } catch (error) {
-    console.error("Import title failed:", error.message);
+    console.error("Import title failed:", (error as Error).message);
     throw error;
   }
 }
 
-export async function generateDocuments(payload) {
+export async function generateDocuments(payload: { tracker: unknown; legal_desc: string }): Promise<unknown> {
   try {
     return await request("/documents/generate", {
       method: "POST",
@@ -40,82 +56,81 @@ export async function generateDocuments(payload) {
       body: JSON.stringify(payload),
     });
   } catch (error) {
-    console.error("Document generation failed:", error.message);
+    console.error("Document generation failed:", (error as Error).message);
     throw error;
   }
 }
 
-export async function fetchProjectByNumber(projNum) {
+export async function fetchProjectByNumber(projNum: string): Promise<Project> {
   if (!projNum) throw new Error("Project number is required");
-  return await request(`/projects/by-number/${encodeURIComponent(projNum)}`);
+  return await request<Project>(`/projects/by-number/${encodeURIComponent(projNum)}`);
 }
 
-export async function fetchSurveyors() {
-  return await request("/projects/surveyors", {
+export async function fetchSurveyors(): Promise<Surveyor[]> {
+  return await request<Surveyor[]>("/projects/surveyors", {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
 }
 
-export async function createProject(projectData) {
+export async function createProject(projectData: CreateProjectPayload): Promise<Project> {
   try {
-    return await request("/projects", {
+    return await request<Project>("/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(projectData),
     });
   } catch (error) {
-    console.error("Project creation failed:", error.message);
+    console.error("Project creation failed:", (error as Error).message);
     throw error;
   }
 }
 
-export async function createEncumbrance(payload) {
-  return await request("/titles/encumbrances", {
+export async function createEncumbrance(payload: EncumbranceCreatePayload): Promise<Encumbrance> {
+  return await request<Encumbrance>("/titles/encumbrances", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 }
 
-export async function updateEncumbrance(encumbranceId, payload) {
+export async function updateEncumbrance(encumbranceId: number, payload: EncumbranceUpdatePayload): Promise<Encumbrance> {
   if (!encumbranceId) {
     throw new Error("Encumbrance ID is required");
   }
 
-  return await request(`/titles/encumbrances/${encumbranceId}`, {
+  return await request<Encumbrance>(`/titles/encumbrances/${encumbranceId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 }
 
-// Encumbrance Endpoints - remove this? do we need be able to delete these?
-export async function deleteEncumbrance(encumbranceId) {
+export async function deleteEncumbrance(encumbranceId: number): Promise<null> {
   if (!encumbranceId) {
     throw new Error("Encumbrance ID is required");
   }
 
-  return await request(`/titles/encumbrances/${encumbranceId}`, {
+  return await request<null>(`/titles/encumbrances/${encumbranceId}`, {
     method: "DELETE",
   });
 }
 
-export async function fetchEncumbranceActions() {
-  return request("/lookups/encumbrance-actions");
+export async function fetchEncumbranceActions(): Promise<EncumbranceAction[]> {
+  return request<EncumbranceAction[]>("/lookups/encumbrance-actions");
 }
 
-export async function fetchEncumbranceStatuses() {
-  return request("/lookups/encumbrance-statuses");
+export async function fetchEncumbranceStatuses(): Promise<EncumbranceStatus[]> {
+  return request<EncumbranceStatus[]>("/lookups/encumbrance-statuses");
 }
 
 // Document Categories (for plan types)
-export async function fetchDocumentCategories() {
-  return request("/documents/category");
+export async function fetchDocumentCategories(): Promise<DocumentCategory[]> {
+  return request<DocumentCategory[]>("/documents/category");
 }
 
-export async function createDocumentCategory(code, name) {
-  return request("/documents/category", {
+export async function createDocumentCategory(code: string, name: string): Promise<DocumentCategory> {
+  return request<DocumentCategory>("/documents/category", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code, name }),
@@ -123,37 +138,37 @@ export async function createDocumentCategory(code, name) {
 }
 
 // Document Tasks (Plans & New Agreements)
-export async function fetchDocumentTasks(projectId) {
+export async function fetchDocumentTasks(projectId: number): Promise<DocumentTask[]> {
   if (!projectId) throw new Error("Project ID is required");
-  return request(`/documents?project_id=${projectId}&limit=1000`);
+  return request<DocumentTask[]>(`/documents?project_id=${projectId}&limit=1000`);
 }
 
-export async function createDocumentTask(payload) {
-  return request("/documents", {
+export async function createDocumentTask(payload: DocumentTaskCreatePayload): Promise<DocumentTask> {
+  return request<DocumentTask>("/documents", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 }
 
-export async function updateDocumentTask(taskId, payload) {
+export async function updateDocumentTask(taskId: number, payload: DocumentTaskUpdatePayload): Promise<DocumentTask> {
   if (!taskId) throw new Error("Task ID is required");
-  return request(`/documents/${taskId}`, {
+  return request<DocumentTask>(`/documents/${taskId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 }
 
-export async function deleteDocumentTask(taskId) {
+export async function deleteDocumentTask(taskId: number): Promise<null> {
   if (!taskId) throw new Error("Task ID is required");
-  return request(`/documents/${taskId}`, {
+  return request<null>(`/documents/${taskId}`, {
     method: "DELETE",
   });
 }
 
 // Export project to Excel
-export async function exportProjectToExcel(projectId) {
+export async function exportProjectToExcel(projectId: number): Promise<string> {
   if (!projectId) throw new Error("Project ID is required");
   
   const url = `${API_BASE}/projects/${projectId}/export-excel`;
@@ -185,3 +200,4 @@ export async function exportProjectToExcel(projectId) {
   
   return filename;
 }
+
