@@ -32,11 +32,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json();
 }
 
-export async function importTitle(file: File): Promise<ImportTitleResponse> {
+export async function importTitle(projectId: number, file: File): Promise<ImportTitleResponse> {
   const formData = new FormData();
   formData.append("file", file);
   try {
-    return await request<ImportTitleResponse>("/import-title", {
+    return await request<ImportTitleResponse>(                                                                                                                                                                                                                                                                                                                                                                                                                                         `/titles?project_id=${projectId}`, {
       method: "POST",
       body: formData,
     });

@@ -601,18 +601,25 @@ function App() {
     if (!file) {
       return;
     }
+    if (!currentProjectId) {
+      setStatus("Please load a project first before importing a title.");
+      return;
+    }
     setLoading(true);
     try {
-      const payload = await importTitleApi(file);
+      const payload = await importTitleApi(currentProjectId,file);
+      console.log("Imported payload:", payload);
       const importedRows =
         payload?.existing_encumbrances_on_title ??
         payload?.inst_on_title ??
+        payload?.encumbrances ??
         payload?.instruments;
       if (importedRows && importedRows.length > 0) {
         updateTracker((prev) => ({
           existing_encumbrances_on_title: mapInstrumentsToRows(importedRows as BackendInstrument[]),
           legal_desc: payload?.legal_desc ?? prev.legal_desc,
         }));
+        await reloadTracker();
         setStatus(`Imported ${importedRows.length} instruments from title certificate.`);
       } else {
         setStatus("Import finished, but no instruments were returned.");
