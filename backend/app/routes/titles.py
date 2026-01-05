@@ -129,27 +129,6 @@ def get_encumbrance(encumbrance_id: int, db: Session = Depends(get_db)):
     return encumbrance
 
 
-@router.post("/encumbrances", response_model=EncumbranceResponse)
-def create_encumbrance(
-    encumbrance: EncumbranceCreate,
-    db: Session = Depends(get_db),
-):
-    """Create a new encumbrance for a title document."""
-    # Verify title document exists
-    title_doc = db.query(TitleDocument).filter(TitleDocument.id == encumbrance.title_document_id).first()
-    if not title_doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Title document not found",
-        )
-
-    db_encumbrance = Encumbrance(**encumbrance.dict())
-    db.add(db_encumbrance)
-    db.commit()
-    db.refresh(db_encumbrance)
-    return db_encumbrance
-
-
 @router.put("/encumbrances/{encumbrance_id}", response_model=EncumbranceResponse)
 def update_encumbrance(
     encumbrance_id: int,
@@ -230,11 +209,32 @@ def delete_encumbrance(
         .filter(Encumbrance.id == encumbrance_id)
         .first()
     )
-    if not db_encumbrance:
+
+    if not title_doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Encumbrance not found",
+            detail="Title document not found",
         )
 
-    db.delete(db_encumbrance)
-    db.commit()
+    try:
+        # Delete encumbrances explicitly
+        db.query(Encumbrance).filter(
+            Encumbrance.title_document_id == title_id
+        ).delete(synchronize_session=False)
+
+        # Optionally delete the file from disk
+        if title_doc.file_path and os.path.exists(title_doc.file_path):
+            os.remove(title_doc.file_path)
+
+        # Delete the title document
+        db.delete(title_doc)
+        db.commit()
+
+        return None  
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete title document: {str(e)}",
+        )
