@@ -24,7 +24,7 @@ class TitleDocument(Base):
 
 class Encumbrance(Base):
     """Existing encumbrances extracted from title documents"""
-    __tablename__ = "Encumbrance"
+    __tablename__ = "EncumbranceRow"
 
     id = Column(Integer, primary_key=True, index=True)
     title_document_id = Column(Integer, ForeignKey("TitleDocument.id"), nullable=False)

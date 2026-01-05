@@ -35,12 +35,11 @@ class LegalDocument(Base):
 
 class DocumentTask(Base):
     """Tasks for documents to be created (subdivisions, URW, agreements)"""
-    __tablename__ = "DocumentTask"
+    __tablename__ = "DocumentTaskRow"
 
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("Project.id"), nullable=False)
-    encumbrance_id = Column(Integer, ForeignKey("Encumbrance.id"), nullable=True)
-    category_id = Column(Integer, ForeignKey("DocumentCategory.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("DocumentCategory.id"), nullable=True)  # NULL = New Agreements
     item_no = Column(Integer, nullable=False)
     doc_desc = Column(String(500), nullable=True)
     copies_dept = Column(String(200), nullable=True)
@@ -53,7 +52,6 @@ class DocumentTask(Base):
 
     # Relationships
     project = relationship("Project", back_populates="document_tasks")
-    encumbrance = relationship("Encumbrance")
     category = relationship("DocumentCategory")
     document_status = relationship("DocumentTaskStatus")
     legal_document_template = relationship("LegalDocumentTemplate")

@@ -69,7 +69,7 @@ class DocumentTaskBase(BaseModel):
     signatories: Optional[str] = None
     condition_of_approval: Optional[str] = None
     circulation_notes: Optional[str] = None
-    category_id: int
+    category_id: Optional[int] = None  # NULL = New Agreements
     document_status_id: Optional[int] = None
     legal_document_template_id: Optional[int] = None
     legal_document_id: Optional[int] = None
@@ -88,6 +88,7 @@ class DocumentTaskUpdate(BaseModel):
     signatories: Optional[str] = None
     condition_of_approval: Optional[str] = None
     circulation_notes: Optional[str] = None
+    category_id: Optional[int] = None
     document_status_id: Optional[int] = None
     legal_document_template_id: Optional[int] = None
     legal_document_id: Optional[int] = None
