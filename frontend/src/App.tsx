@@ -19,6 +19,7 @@ import type {
 
 import {
   importTitle as importTitleApi,
+  deleteTitle,
   generateDocuments,
   fetchProjectByNumber,
   fetchSurveyors,
@@ -1056,12 +1057,25 @@ function App() {
                                             };
                                           });
                                         }}
-                                        onRemoveTitle={() => {
-                                          updateTracker((prev) => {
-                                            const updatedTitles = { ...prev.titles };
-                                            delete updatedTitles[titleName];
-                                            return { titles: updatedTitles };
-                                          });
+                                        onRemoveTitle={async () => {
+                                          const titleDocId = parseInt(titleName.replace("TITLE-", ""), 10);
+                                          if (!titleDocId) return;
+
+                                          setLoading(true);
+                                          try {
+                                            await deleteTitle(titleDocId); // <-- call your new API function
+                                            updateTracker((prev) => {
+                                              const updatedTitles = { ...prev.titles };
+                                              delete updatedTitles[titleName];
+                                              return { titles: updatedTitles };
+                                            });
+                                            setStatus(`Title ${titleName} deleted successfully.`);
+                                          } catch (err) {
+                                            console.error("Failed to delete title:", err);
+                                            setStatus(`Failed to delete title ${titleName}.`);
+                                          } finally {
+                                            setLoading(false);
+                                          }
                                         }}
                                       />
                                     ))
