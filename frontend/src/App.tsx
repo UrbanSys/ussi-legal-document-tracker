@@ -19,6 +19,7 @@ import type {
 
 import {
   importTitle as importTitleApi,
+  deleteTitle,
   generateDocuments,
   fetchProjectByNumber,
   fetchSurveyors,
@@ -50,7 +51,7 @@ const STATUS_OPTIONS = [
 
 const PROGRAM_METADATA = {
   program_name: "USSI DOCUMENT TRACKER",
-  program_version: "V.3.0",
+  program_version: "V.4.0",
   file_version: 1,
 };
 
@@ -601,18 +602,25 @@ function App() {
     if (!file) {
       return;
     }
+    if (!currentProjectId) {
+      setStatus("Please load a project first before importing a title.");
+      return;
+    }
     setLoading(true);
     try {
-      const payload = await importTitleApi(file);
+      const payload = await importTitleApi(currentProjectId,file);
+      console.log("Imported payload:", payload);
       const importedRows =
         payload?.existing_encumbrances_on_title ??
         payload?.inst_on_title ??
+        payload?.encumbrances ??
         payload?.instruments;
       if (importedRows && importedRows.length > 0) {
         updateTracker((prev) => ({
           existing_encumbrances_on_title: mapInstrumentsToRows(importedRows as BackendInstrument[]),
           legal_desc: payload?.legal_desc ?? prev.legal_desc,
         }));
+        await reloadTracker();
         setStatus(`Imported ${importedRows.length} instruments from title certificate.`);
       } else {
         setStatus("Import finished, but no instruments were returned.");
@@ -1049,12 +1057,25 @@ function App() {
                                             };
                                           });
                                         }}
-                                        onRemoveTitle={() => {
-                                          updateTracker((prev) => {
-                                            const updatedTitles = { ...prev.titles };
-                                            delete updatedTitles[titleName];
-                                            return { titles: updatedTitles };
-                                          });
+                                        onRemoveTitle={async () => {
+                                          const titleDocId = parseInt(titleName.replace("TITLE-", ""), 10);
+                                          if (!titleDocId) return;
+
+                                          setLoading(true);
+                                          try {
+                                            await deleteTitle(titleDocId); // <-- call your new API function
+                                            updateTracker((prev) => {
+                                              const updatedTitles = { ...prev.titles };
+                                              delete updatedTitles[titleName];
+                                              return { titles: updatedTitles };
+                                            });
+                                            setStatus(`Title ${titleName} deleted successfully.`);
+                                          } catch (err) {
+                                            console.error("Failed to delete title:", err);
+                                            setStatus(`Failed to delete title ${titleName}.`);
+                                          } finally {
+                                            setLoading(false);
+                                          }
                                         }}
                                       />
                                     ))

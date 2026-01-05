@@ -190,21 +190,36 @@ def export_project_excel(project_id: int, db: Session = Depends(get_db)):
         ]
 
     plans: Dict[str, list[dict]] = {}
+    exist_enc = []
 
     for d in project.document_tasks:
-        category_code = d.category.code if d.category else "UNCATEGORIZED"
-        if category_code not in plans:
-            plans[category_code] = []
-        plans[category_code].append(
-            {
-                "Document/Desc": d.doc_desc,
-                "Copies/Dept": d.copies_dept,
-                "Signatories": d.signatories,
-                "Condition of Approval": d.condition_of_approval,
-                "Circulation Notes": d.circulation_notes,
-                "Status": d.document_status.code if d.document_status else "",
-            }
-        )
+        if d.category.id == 3:
+            #Hardcoded existing encumbrances
+            exist_enc.append(
+                {
+                    "Document/Desc": d.doc_desc,
+                    "Copies/Dept": d.copies_dept,
+                    "Signatories": d.signatories,
+                    "Condition of Approval": d.condition_of_approval,
+                    "Circulation Notes": d.circulation_notes,
+                    "Status": d.document_status.code if d.document_status else "",
+                }
+            )
+        else:
+            category_code = d.category.code if d.category else "UNCATEGORIZED"
+            print(category_code)
+            if category_code not in plans:
+                plans[category_code] = []
+            plans[category_code].append(
+                {
+                    "Document/Desc": d.doc_desc,
+                    "Copies/Dept": d.copies_dept,
+                    "Signatories": d.signatories,
+                    "Condition of Approval": d.condition_of_approval,
+                    "Circulation Notes": d.circulation_notes,
+                    "Status": d.document_status.code if d.document_status else "",
+                }
+            )
 
     buffer = io.BytesIO()
 
@@ -212,7 +227,7 @@ def export_project_excel(project_id: int, db: Session = Depends(get_db)):
         buffer,
         encumbrances=encumbrances,
         plans=plans,
-        new_agreements=[],        # per your note
+        new_agreements=exist_enc,        # per your note
         proj_num=project.proj_num,
     )
 

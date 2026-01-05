@@ -32,11 +32,23 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json();
 }
 
-export async function importTitle(file: File): Promise<ImportTitleResponse> {
+export async function deleteTitle(titleId: number): Promise<null> {
+  if (!titleId) throw new Error("Title ID is required");
+  try {
+    return request<null>(`/titles/${titleId}`, {
+    method: "DELETE",
+  });
+  } catch (error) {
+    console.error("Delete title failed:", (error as Error).message);
+    throw error;
+  }
+}
+
+export async function importTitle(projectId: number, file: File): Promise<ImportTitleResponse> {
   const formData = new FormData();
   formData.append("file", file);
   try {
-    return await request<ImportTitleResponse>("/import-title", {
+    return await request<ImportTitleResponse>(                                                                                                                                                                                                                                                                                                                                                                                                                                         `/titles?project_id=${projectId}`, {
       method: "POST",
       body: formData,
     });
