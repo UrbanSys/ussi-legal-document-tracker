@@ -50,7 +50,7 @@ const STATUS_OPTIONS = [
 
 const PROGRAM_METADATA = {
   program_name: "USSI DOCUMENT TRACKER",
-  program_version: "V.3.0",
+  program_version: "V.4.0",
   file_version: 1,
 };
 
