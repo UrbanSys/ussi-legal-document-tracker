@@ -1,40 +1,43 @@
-import PropTypes from "prop-types";
-import "./Table.css";
+import type { AgreementRow } from '../types';
+import './Table.css';
 
 const headerLabels = [
-  "Item",
-  "Document/Desc",
-  "Copies/Dept",
-  "Signatories",
-  "Condition of Approval",
-  "Circulation Notes",
-  "Status",
+  'Item',
+  'Document/Desc',
+  'Copies/Dept',
+  'Signatories',
+  'Condition of Approval',
+  'Circulation Notes',
+  'Status',
 ];
 
-export function PlanSection({
-  name,
+interface AgreementsTableProps {
+  rows: AgreementRow[];
+  statusOptions: string[];
+  onFieldChange: (index: number, field: string, value: string) => void;
+  onAddRow: () => void;
+  onRemoveRow: () => void;
+}
+
+export function AgreementsTable({
   rows,
   statusOptions,
   onFieldChange,
   onAddRow,
   onRemoveRow,
-  onRemovePlan
-}) {
+}: AgreementsTableProps) {
   return (
     <section className="panel">
       <div className="panel__heading">
-        <h3>Plan – {name}</h3>
+        <h2>New Agreements Concurrent with Registration</h2>
         <div className="panel__actions">
-          <button type="button" className = "danger" onClick={() => onRemovePlan(name)}>
-            - Plan
-          </button>
-          <button type="button" onClick={() => onAddRow(name)}>
+          <button type="button" onClick={onAddRow}>
             + Row
           </button>
           <button
             type="button"
-            onClick={() => onRemoveRow(name)}
-            disabled={!rows || rows.length === 0}
+            onClick={onRemoveRow}
+            disabled={rows.length === 0}
           >
             - Row
           </button>
@@ -50,48 +53,47 @@ export function PlanSection({
             </tr>
           </thead>
           <tbody>
-            {!rows || rows.length === 0 ? (
+            {rows.length === 0 ? (
               <tr>
                 <td colSpan={headerLabels.length} className="empty-row">
-                  No plan documents captured.
+                  No new agreements captured.
                 </td>
               </tr>
             ) : (
               rows.map((row, index) => (
-                <tr key={`${name}-${row.id ?? index}`}>
+                <tr key={`${row.id}-${index}`}>
                   <td>{index + 1}</td>
                   <td>
                     <input
-                      value={row["Document/Desc"] ?? ""}
+                      value={row['Document/Desc'] ?? ''}
                       onChange={(e) =>
-                        onFieldChange(name, index, "Document/Desc", e.target.value)
+                        onFieldChange(index, 'Document/Desc', e.target.value)
                       }
                     />
                   </td>
                   <td>
                     <input
-                      value={row["Copies/Dept"] ?? ""}
+                      value={row['Copies/Dept'] ?? ''}
                       onChange={(e) =>
-                        onFieldChange(name, index, "Copies/Dept", e.target.value)
+                        onFieldChange(index, 'Copies/Dept', e.target.value)
                       }
                     />
                   </td>
                   <td>
                     <textarea
-                      value={row["Signatories"] ?? ""}
+                      value={row['Signatories'] ?? ''}
                       onChange={(e) =>
-                        onFieldChange(name, index, "Signatories", e.target.value)
+                        onFieldChange(index, 'Signatories', e.target.value)
                       }
                     />
                   </td>
                   <td>
                     <textarea
-                      value={row["Condition of Approval"] ?? ""}
+                      value={row['Condition of Approval'] ?? ''}
                       onChange={(e) =>
                         onFieldChange(
-                          name,
                           index,
-                          "Condition of Approval",
+                          'Condition of Approval',
                           e.target.value,
                         )
                       }
@@ -99,22 +101,17 @@ export function PlanSection({
                   </td>
                   <td>
                     <textarea
-                      value={row["Circulation Notes"] ?? ""}
+                      value={row['Circulation Notes'] ?? ''}
                       onChange={(e) =>
-                        onFieldChange(
-                          name,
-                          index,
-                          "Circulation Notes",
-                          e.target.value,
-                        )
+                        onFieldChange(index, 'Circulation Notes', e.target.value)
                       }
                     />
                   </td>
                   <td>
                     <select
-                      value={row["Status"] ?? statusOptions[0]}
+                      value={row['Status'] ?? statusOptions[0]}
                       onChange={(e) =>
-                        onFieldChange(name, index, "Status", e.target.value)
+                        onFieldChange(index, 'Status', e.target.value)
                       }
                     >
                       {statusOptions.map((option) => (
@@ -134,17 +131,5 @@ export function PlanSection({
   );
 }
 
-PlanSection.propTypes = {
-  name: PropTypes.string.isRequired,
-  rows: PropTypes.arrayOf(PropTypes.object),
-  statusOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
-  onFieldChange: PropTypes.func.isRequired,
-  onAddRow: PropTypes.func.isRequired,
-  onRemoveRow: PropTypes.func.isRequired,
-};
+export default AgreementsTable;
 
-PlanSection.defaultProps = {
-  rows: [],
-};
-
-export default PlanSection;

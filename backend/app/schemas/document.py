@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date
 
+EXISTING_ENCUMBRANCES_CATEGORY_ID = 3
+
 
 class DocumentCategoryResponse(BaseModel):
     """Schema for document category response"""
@@ -69,8 +71,7 @@ class DocumentTaskBase(BaseModel):
     signatories: Optional[str] = None
     condition_of_approval: Optional[str] = None
     circulation_notes: Optional[str] = None
-    encumbrance_id: Optional[int] = None
-    category_id: int
+    category_id: Optional[int] = None  # NULL = New Agreements
     document_status_id: Optional[int] = None
     legal_document_template_id: Optional[int] = None
     legal_document_id: Optional[int] = None
@@ -89,10 +90,13 @@ class DocumentTaskUpdate(BaseModel):
     signatories: Optional[str] = None
     condition_of_approval: Optional[str] = None
     circulation_notes: Optional[str] = None
+    category_id: Optional[int] = None
     document_status_id: Optional[int] = None
     legal_document_template_id: Optional[int] = None
     legal_document_id: Optional[int] = None
 
+from pydantic import BaseModel, field_serializer
+from typing import Optional
 
 class DocumentTaskResponse(DocumentTaskBase):
     """Schema for document task response"""
@@ -102,6 +106,26 @@ class DocumentTaskResponse(DocumentTaskBase):
     document_status: Optional[DocumentTaskStatusResponse] = None
     legal_document_template: Optional[LegalDocumentTemplateResponse] = None
     legal_document: Optional[LegalDocumentResponse] = None
+
+    @field_serializer("category_id")
+    def serialize_category_id(self, value):
+        if value == EXISTING_ENCUMBRANCES_CATEGORY_ID:
+            return None
+        return value
+
+    class Config:
+        from_attributes = True
+
+
+# Pydantic schema
+class DocumentCategoryCreate(BaseModel):
+    code: str
+    name: str
+
+class DocumentCategoryResponse(BaseModel):
+    id: int
+    code: str
+    name: str
 
     class Config:
         from_attributes = True

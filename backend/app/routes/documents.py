@@ -4,16 +4,19 @@ API routes for document task and document generation endpoints.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import DocumentTask, LegalDocument
+from app.models import DocumentTask, LegalDocument, DocumentCategory
 from app.schemas.document import (
     DocumentTaskCreate,
     DocumentTaskUpdate,
     DocumentTaskResponse,
+    DocumentCategoryCreate,
+    DocumentCategoryResponse,
 )
 from typing import List
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
+EXISTING_ENCUMBRANCES_CATEGORY_ID = 3
 
 @router.post("", response_model=DocumentTaskResponse)
 def create_document_task(
@@ -21,7 +24,9 @@ def create_document_task(
     db: Session = Depends(get_db),
 ):
     """Create a new document task."""
-    db_task = DocumentTask(**doc_task.dict())
+    db_task = DocumentTask(**doc_task.dict()) 
+    if db_task.category_id is None:
+        db_task.category_id=EXISTING_ENCUMBRANCES_CATEGORY_ID
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
@@ -37,7 +42,7 @@ def list_document_tasks(
 ):
     """Get all document tasks for a project."""
     tasks = (
-        db.query(DocumentTask)
+        db.query(DocumentTask).order_by(DocumentTask.id)
         .filter(DocumentTask.project_id == project_id)
         .offset(skip)
         .limit(limit)
@@ -45,6 +50,20 @@ def list_document_tasks(
     )
     return tasks
 
+@router.post("/category", response_model=DocumentCategoryResponse)
+def create_category(category: DocumentCategoryCreate, db: Session = Depends(get_db)):
+    db_category = DocumentCategory(**category.dict())
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+
+@router.get("/category", response_model=List[DocumentCategoryResponse])
+def list_document_categories(db: Session = Depends(get_db)):
+    """Get all document categories."""
+    categories = db.query(DocumentCategory).order_by(DocumentCategory.id).all()
+    return categories
 
 @router.get("/{task_id}", response_model=DocumentTaskResponse)
 def get_document_task(task_id: int, db: Session = Depends(get_db)):
@@ -73,6 +92,8 @@ def update_document_task(
         )
 
     update_data = task_update.dict(exclude_unset=True)
+    if "category_id" in update_data and update_data["category_id"] is None:
+        update_data["category_id"] = EXISTING_ENCUMBRANCES_CATEGORY_ID
     for field, value in update_data.items():
         setattr(db_task, field, value)
 

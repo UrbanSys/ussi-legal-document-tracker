@@ -8,7 +8,7 @@ from app.config import APP_NAME, APP_VERSION, ALLOWED_ORIGINS, DEBUG
 from app.database import create_all_tables
 # Import models to register them with Base.metadata before create_all_tables()
 import app.models  # noqa: F401
-from app.routes import projects, titles, documents
+from app.routes import projects, titles, documents, lookups
 
 # Create FastAPI app
 app = FastAPI(
@@ -59,6 +59,7 @@ async def health_check():
 app.include_router(projects.router)
 app.include_router(titles.router)
 app.include_router(documents.router)
+app.include_router(lookups.router)
 
 
 # Root endpoint

@@ -2,6 +2,7 @@
 API routes for project management endpoints.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.project import Project, SurveyorALS
@@ -13,8 +14,9 @@ from app.schemas.project import (
     SurveyorCreate,
     SurveyorResponse,
 )
-from typing import List
-
+from typing import List, Dict
+import io
+from app.services.excel_generator import ExcelGeneratorService
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
@@ -37,6 +39,18 @@ def get_surveyor(surveyor_id: int, db: Session = Depends(get_db)):
         )
     return surveyor
 
+@router.delete("/surveyors/{surveyor_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_surveyor(surveyor_id: int, db: Session = Depends(get_db)):
+    """Delete a specific surveyor by ID."""
+    surveyor = db.query(SurveyorALS).filter(SurveyorALS.id == surveyor_id).first()
+    if not surveyor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Surveyor not found",
+        )
+    db.delete(surveyor)
+    db.commit()
+
 
 @router.post("/surveyors", response_model=SurveyorResponse)
 def create_surveyor(surveyor: SurveyorCreate, db: Session = Depends(get_db)):
@@ -52,7 +66,7 @@ def create_surveyor(surveyor: SurveyorCreate, db: Session = Depends(get_db)):
 @router.get("", response_model=List[ProjectResponse])
 def list_projects(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     """Get all projects with pagination."""
-    projects = db.query(Project).offset(skip).limit(limit).all()
+    projects = db.query(Project).order_by(Project.id).offset(skip).limit(limit).all()
     return projects
 
 
@@ -67,6 +81,23 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
         )
     return project
 
+@router.get("/by-number/{project_num}", response_model=ProjectDetailResponse)
+def get_project_by_number(project_num: str, db: Session = Depends(get_db)):
+    """Get a specific project by project number"""
+
+    project = (
+        db.query(Project)
+        .filter(Project.proj_num == project_num)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+
+    return project
 
 @router.post("", response_model=ProjectResponse)
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
@@ -121,3 +152,93 @@ def delete_project(project_id: int, db: Session = Depends(get_db)):
 
     db.delete(db_project)
     db.commit()
+
+
+@router.get(
+    "/{project_id}/export-excel",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "content": {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "Excel export",
+        }
+    },
+)
+def export_project_excel(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    encumbrances = {}
+
+    for title_doc in project.title_documents:
+        plan_name = f"Title Document {title_doc.id}"
+
+        encumbrances[plan_name] = [
+            {
+                "Document #": e.document_number,
+                "Description": e.description,
+                "Signatories": e.signatories,
+                "Circulation Notes": e.circulation_notes,
+                "Action": e.action.code if e.action else "",
+                "Status": e.status.code if e.status else "",
+            }
+            for e in title_doc.encumbrances
+        ]
+
+    plans: Dict[str, list[dict]] = {}
+    exist_enc = []
+
+    for d in project.document_tasks:
+        if d.category.id == 3:
+            #Hardcoded existing encumbrances
+            exist_enc.append(
+                {
+                    "Document/Desc": d.doc_desc,
+                    "Copies/Dept": d.copies_dept,
+                    "Signatories": d.signatories,
+                    "Condition of Approval": d.condition_of_approval,
+                    "Circulation Notes": d.circulation_notes,
+                    "Status": d.document_status.code if d.document_status else "",
+                }
+            )
+        else:
+            category_code = d.category.code if d.category else "UNCATEGORIZED"
+            print(category_code)
+            if category_code not in plans:
+                plans[category_code] = []
+            plans[category_code].append(
+                {
+                    "Document/Desc": d.doc_desc,
+                    "Copies/Dept": d.copies_dept,
+                    "Signatories": d.signatories,
+                    "Condition of Approval": d.condition_of_approval,
+                    "Circulation Notes": d.circulation_notes,
+                    "Status": d.document_status.code if d.document_status else "",
+                }
+            )
+
+    buffer = io.BytesIO()
+
+    ExcelGeneratorService.export_as_excel(
+        buffer,
+        encumbrances=encumbrances,
+        plans=plans,
+        new_agreements=exist_enc,        # per your note
+        proj_num=project.proj_num,
+    )
+
+    buffer.seek(0)
+
+    filename = f"{project.proj_num}_document_tracking.xlsx"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        },
+    )

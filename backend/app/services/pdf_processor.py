@@ -74,63 +74,69 @@ class PDFProcessorService:
             raise ValueError("Unable to locate legal description in text!")
 
         # Extract instruments on title
-        m_rn = re.compile(r'[\d]{3} [\d]{3} [\d]{3}')
+        m_rn = re.compile(r'[\d]{3} [\d]{3} [\d]{3}|\d{2,}[A-Za-z]{2,}')
         m_date = re.compile(r'[\d]{2}/[0-9]{2}/[\d]{4}')
-        m_inst = re.compile(r'(?:[A-Z]+ ?)+')
-
-        inst_on_title = []
+        m_inst = re.compile(r'(?:[A-Z]{3,}(?: [A-Z]+)*)')
+        
         inst_start_index = 0
         inst_end_index = 0
-        inst_count_in_title = 0
 
-        for idx, line in enumerate(text):
-            has_date = False
-            has_rn = False
+        inst_count = 0
+
+        inst_date = ""
+        inst_rn = ""
+        inst_name = ""
+
+        inst_on_title = []
+        inst_page_number = 0
+        for idx, i in enumerate(text):
+            has_date=False
+            has_rn=False
             end_of_inst = False
-
-            result_rn = m_rn.search(line)
-            if result_rn:
-                has_rn = True
-
-            result_date = m_date.search(line)
+            line_for_rn = i
+            result_date = m_date.search(i)
             if result_date:
-                has_date = True
-
-            if "TOTAL INSTRUMENTS" in line:
+                has_date=True
+                temp_date = result_date.group()
+                line_for_rn = i.replace(temp_date, " ")
+            result_rn = m_rn.search(line_for_rn)
+            if result_rn:
+                has_rn=True
+            if "TOTAL INSTRUMENTS" in i:
                 end_of_inst = True
+            if has_rn and has_date:
+                #This is an instrument
+                if inst_start_index!=0:
+                    end_of_inst = True
 
-            if has_rn and has_date and inst_start_index != 0:
-                end_of_inst = True
-
-            if end_of_inst and inst_start_index != 0:
-                inst_end_index = idx - 1
+            if end_of_inst:
+                inst_end_index=idx-1
                 inst_text = ""
                 sign_text = ""
-                
-                for j in range(inst_start_index + 1, inst_end_index + 1):
+                for j in range(inst_start_index+1,inst_end_index+1):
                     inst_text = inst_text + text[j] + "\n"
                     if "GRANTEE" in text[j] or "CAVEATOR" in text[j] or "MORTGAGEE" in text[j]:
-                        try:
-                            signatory = text[j].split(' - ')[1]
-                            sign_text = sign_text + signatory + "\n"
-                        except IndexError:
-                            pass
+                        signatory = text[j].split(' - ')[1]
+                        sign_text = sign_text + signatory + "\n"
 
-                new_inst = {
-                    "date": inst_date if inst_start_index != 0 else "",
-                    "reg_number": inst_rn if inst_start_index != 0 else "",
-                    "name": inst_name if inst_start_index != 0 else "",
-                    "description": inst_text,
-                    "signatories": sign_text,
-                }
+                new_inst = {}
+
+                new_inst["date"] = inst_date
+                new_inst["reg_number"] = inst_rn
+                new_inst["name"] = inst_name
+                new_inst["description"] = inst_text
+                new_inst["signatories"] = sign_text
+                new_inst["temp_selection"] = 4
+
                 inst_on_title.append(new_inst)
 
             if has_rn and has_date:
+                #This line is the beginning of an instrument
                 inst_date = result_date.group()
                 inst_rn = result_rn.group()
-                inst_start_index = idx
-                
-                result_name = m_inst.search(line)
+                inst_start_index=idx
+                result_name = m_inst.search(i)
+
                 if result_name:
                     inst_name = result_name.group()
                 else:
@@ -181,7 +187,7 @@ class TitleDocumentService:
                 item_no=idx,
                 document_number=inst.get("reg_number"),
                 encumbrance_date=None,  # Parse from inst["date"] if needed
-                description=inst.get("description"),
+                description=inst.get("name"),
                 signatories=inst.get("signatories"),
             )
             db.add(encumbrance)
