@@ -182,8 +182,8 @@ def export_project_excel(project_id: int, db: Session = Depends(get_db)):
                 "Document #": e.document_number,
                 "Description": e.description,
                 "Signatories": e.signatories,
-                "Circulation Notes": e.circulation_notes,
                 "Action": e.action.code if e.action else "",
+                "Circulation Notes": e.circulation_notes,
                 "Status": e.status.code if e.status else "",
             }
             for e in title_doc.encumbrances
