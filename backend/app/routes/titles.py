@@ -209,32 +209,11 @@ def delete_encumbrance(
         .filter(Encumbrance.id == encumbrance_id)
         .first()
     )
-
-    if not title_doc:
+    if not db_encumbrance:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Title document not found",
+            detail="Encumbrance not found",
         )
 
-    try:
-        # Delete encumbrances explicitly
-        db.query(Encumbrance).filter(
-            Encumbrance.title_document_id == title_id
-        ).delete(synchronize_session=False)
-
-        # Optionally delete the file from disk
-        if title_doc.file_path and os.path.exists(title_doc.file_path):
-            os.remove(title_doc.file_path)
-
-        # Delete the title document
-        db.delete(title_doc)
-        db.commit()
-
-        return None  
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete title document: {str(e)}",
-        )
+    db.delete(db_encumbrance)
+    db.commit()
