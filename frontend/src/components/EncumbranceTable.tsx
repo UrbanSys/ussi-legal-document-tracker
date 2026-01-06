@@ -103,7 +103,6 @@ export function EncumbranceTable({
                         onFieldChange(name, index, 'action_id', Number(e.target.value))
                       }
                     >
-                      <option value="">Select action</option>
                       {actions.map((a) => (
                         <option key={a.id} value={a.id}>
                           {a.label}
@@ -131,7 +130,6 @@ export function EncumbranceTable({
                         onFieldChange(name, index, 'status_id', Number(e.target.value))
                       }
                     >
-                      <option value="">Select status</option>
                       {statuses.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.label}
