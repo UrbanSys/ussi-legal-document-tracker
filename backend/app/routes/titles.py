@@ -68,6 +68,36 @@ def create_title_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing PDF: {str(e)}",
         )
+    
+@router.post("/blank-section", response_model=TitleDocumentResponse)
+def create_title_document(
+    project_id: int,
+    name: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Create a blank title section for existing encumbrances
+    """
+    try:
+
+        # Create title document record
+        title_doc = TitleDocument(
+            project_id=project_id,
+            file_path="NOT_UPLOADED",
+            uploaded_by="system",  # TODO: Get from auth context
+        )
+        db.add(title_doc)
+        db.commit()
+        db.refresh(title_doc)
+        
+        return title_doc
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing PDF: {str(e)}",
+        )
 
 
 @router.get("/{title_id}", response_model=TitleDocumentResponse)
@@ -128,6 +158,7 @@ def get_encumbrance(encumbrance_id: int, db: Session = Depends(get_db)):
         )
     return encumbrance
 
+
 @router.post("/encumbrances", response_model=EncumbranceResponse)
 def create_encumbrance(
     encumbrance: EncumbranceCreate,
@@ -175,48 +206,6 @@ def update_encumbrance(
     db.refresh(db_encumbrance)
     return db_encumbrance
 
-@router.delete(
-    "/{title_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-def delete_title_document(title_id: int, db: Session = Depends(get_db)):
-    """
-    Delete a title document and all associated encumbrances.
-    """
-    title_doc = (
-        db.query(TitleDocument)
-        .filter(TitleDocument.id == title_id)
-        .first()
-    )
-
-    if not title_doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Title document not found",
-        )
-
-    try:
-        # Delete encumbrances explicitly
-        db.query(Encumbrance).filter(
-            Encumbrance.title_document_id == title_id
-        ).delete(synchronize_session=False)
-
-        # Optionally delete the file from disk
-        if title_doc.file_path and os.path.exists(title_doc.file_path):
-            os.remove(title_doc.file_path)
-
-        # Delete the title document
-        db.delete(title_doc)
-        db.commit()
-
-        return None  # 204 No Content
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete title document: {str(e)}",
-        )
 
 @router.delete("/encumbrances/{encumbrance_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_encumbrance(
