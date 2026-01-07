@@ -72,6 +72,40 @@ class PDFProcessorService:
             ret_dict["legal_desc"] = legal_desc_text
         else:
             raise ValueError("Unable to locate legal description in text!")
+        
+        # Extract document number 
+        title_num_start_index = 0
+        title_num_end_index = 0
+        
+        for idx, line in enumerate(text):
+            if "TITLE NUMBER" in line:
+                title_num_start_index = idx + 1
+                print(text[title_num_start_index])
+
+        if title_num_start_index!=0:
+            print(title_num_start_index)
+            print(text[title_num_start_index])
+            title_num_text = text[title_num_start_index]
+
+            m_linc = re.compile(r"\b\d{4}\s\d{3}\s\d{3}\b")
+            m_short_legal = re.compile(r"\d{7}+(?:;\d+)+$")
+            m_title_num = re.compile(r"\d{3}\s\d{3}\s\d{3}(?:\s*\+\d+)?")
+
+            res_match = m_linc.search(title_num_text)
+            result_linc = res_match.group()
+            title_num_text = title_num_text.replace(result_linc,"",1)
+            ret_dict["doc_linc"]=result_linc
+
+            res_match = m_short_legal.search(title_num_text)
+            result_short_legal = res_match.group()
+            title_num_text = title_num_text.replace(result_short_legal,"",1)
+            ret_dict["doc_short_legal"]=result_short_legal
+
+            res_match = m_title_num.search(title_num_text)
+            result_title_num = res_match.group()
+            ret_dict["doc_title_num"]=result_title_num
+        else:
+            ValueError("Unable to locate legal description in text!")
 
         # Extract instruments on title
         m_rn = re.compile(r'[\d]{3} [\d]{3} [\d]{3}|\d{2,}[A-Za-z]{2,}')
