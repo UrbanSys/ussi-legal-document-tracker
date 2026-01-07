@@ -193,7 +193,7 @@ def export_project_excel(project_id: int, db: Session = Depends(get_db)):
     exist_enc = []
 
     for d in project.document_tasks:
-        if d.category.id == 3:
+        if d.category.id == None:
             #Hardcoded existing encumbrances
             exist_enc.append(
                 {

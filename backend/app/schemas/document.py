@@ -5,8 +5,6 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date
 
-EXISTING_ENCUMBRANCES_CATEGORY_ID = 3
-
 
 class DocumentCategoryResponse(BaseModel):
     """Schema for document category response"""
@@ -95,9 +93,6 @@ class DocumentTaskUpdate(BaseModel):
     legal_document_template_id: Optional[int] = None
     legal_document_id: Optional[int] = None
 
-from pydantic import BaseModel, field_serializer
-from typing import Optional
-
 class DocumentTaskResponse(DocumentTaskBase):
     """Schema for document task response"""
     id: int
@@ -106,12 +101,6 @@ class DocumentTaskResponse(DocumentTaskBase):
     document_status: Optional[DocumentTaskStatusResponse] = None
     legal_document_template: Optional[LegalDocumentTemplateResponse] = None
     legal_document: Optional[LegalDocumentResponse] = None
-
-    @field_serializer("category_id")
-    def serialize_category_id(self, value):
-        if value == EXISTING_ENCUMBRANCES_CATEGORY_ID:
-            return None
-        return value
 
     class Config:
         from_attributes = True

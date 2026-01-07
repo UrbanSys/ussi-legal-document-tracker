@@ -16,8 +16,6 @@ from typing import List
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
-EXISTING_ENCUMBRANCES_CATEGORY_ID = 3
-
 @router.post("", response_model=DocumentTaskResponse)
 def create_document_task(
     doc_task: DocumentTaskCreate,
@@ -25,8 +23,6 @@ def create_document_task(
 ):
     """Create a new document task."""
     db_task = DocumentTask(**doc_task.dict()) 
-    if db_task.category_id is None:
-        db_task.category_id=EXISTING_ENCUMBRANCES_CATEGORY_ID
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
@@ -92,8 +88,6 @@ def update_document_task(
         )
 
     update_data = task_update.dict(exclude_unset=True)
-    if "category_id" in update_data and update_data["category_id"] is None:
-        update_data["category_id"] = EXISTING_ENCUMBRANCES_CATEGORY_ID
     for field, value in update_data.items():
         setattr(db_task, field, value)
 
