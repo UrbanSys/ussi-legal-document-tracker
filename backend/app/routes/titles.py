@@ -68,6 +68,36 @@ def create_title_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing PDF: {str(e)}",
         )
+    
+@router.post("/blank-section", response_model=TitleDocumentResponse)
+def create_title_document(
+    project_id: int,
+    name: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Create a blank title section for existing encumbrances
+    """
+    try:
+
+        # Create title document record
+        title_doc = TitleDocument(
+            project_id=project_id,
+            file_path="NOT_UPLOADED",
+            uploaded_by="system",  # TODO: Get from auth context
+        )
+        db.add(title_doc)
+        db.commit()
+        db.refresh(title_doc)
+        
+        return title_doc
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing PDF: {str(e)}",
+        )
 
 
 @router.get("/{title_id}", response_model=TitleDocumentResponse)
@@ -128,6 +158,7 @@ def get_encumbrance(encumbrance_id: int, db: Session = Depends(get_db)):
         )
     return encumbrance
 
+
 @router.post("/encumbrances", response_model=EncumbranceResponse)
 def create_encumbrance(
     encumbrance: EncumbranceCreate,
@@ -175,6 +206,27 @@ def update_encumbrance(
     db.refresh(db_encumbrance)
     return db_encumbrance
 
+
+@router.delete("/encumbrances/{encumbrance_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_encumbrance(
+    encumbrance_id: int,
+    db: Session = Depends(get_db),
+):
+    """Delete an encumbrance."""
+    db_encumbrance = (
+        db.query(Encumbrance)
+        .filter(Encumbrance.id == encumbrance_id)
+        .first()
+    )
+    if not db_encumbrance:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Encumbrance not found",
+        )
+
+    db.delete(db_encumbrance)
+    db.commit()
+
 @router.delete(
     "/{title_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -217,23 +269,3 @@ def delete_title_document(title_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete title document: {str(e)}",
         )
-
-@router.delete("/encumbrances/{encumbrance_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_encumbrance(
-    encumbrance_id: int,
-    db: Session = Depends(get_db),
-):
-    """Delete an encumbrance."""
-    db_encumbrance = (
-        db.query(Encumbrance)
-        .filter(Encumbrance.id == encumbrance_id)
-        .first()
-    )
-    if not db_encumbrance:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Encumbrance not found",
-        )
-
-    db.delete(db_encumbrance)
-    db.commit()

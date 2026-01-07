@@ -58,6 +58,19 @@ export async function importTitle(projectId: number, file: File): Promise<Import
   }
 }
 
+export async function blankTitle(
+  projectId: number,
+  name: string
+): Promise<ImportTitleResponse> {
+  return await request<ImportTitleResponse>(
+    `/titles/blank-section?project_id=${projectId}&name=${encodeURIComponent(name)}`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+
 export async function generateDocuments(payload: { tracker: unknown; legal_desc: string }): Promise<unknown> {
   try {
     return await request("/documents/generate", {
