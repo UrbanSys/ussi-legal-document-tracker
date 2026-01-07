@@ -36,6 +36,7 @@ import {
   updateDocumentTask,
   deleteDocumentTask,
   exportProjectToExcel,
+  blankTitle,
 } from "./services/docTrackerApi";
 import "./App.css";
 
@@ -566,32 +567,37 @@ function App() {
     setNewPlanTypeName("");
   };
 
-  const handleCreateTitle = () => {
+  const handleCreateTitle = async () => {
     const cleaned = newTitleName.trim().toUpperCase();
-    if (!cleaned) return;
+    if (!cleaned || !currentProjectId) return;
 
-    updateTracker((prev) => {
-      const titles = prev.titles ?? {};
+    setLoading(true);
 
-      if (titles[cleaned]) {
-        return {};
-      }
+    try {
+      const created = await blankTitle(currentProjectId, cleaned);
 
-      return {
+      const titleKey = `TITLE-${created.id}`;
+
+      updateTracker((prev) => ({
         titles: {
-          ...titles,
-          [cleaned]: {
+          ...(prev.titles ?? {}),
+          [titleKey]: {
             legal_desc: "",
-            existing_encumbrances_on_title: Array.from({ length: 3 }, () =>
-              createEncumbranceRow(encActions, encStatuses)
-            ),
+            existing_encumbrances_on_title: [],
           },
         },
-      };
-    });
+      }));
 
-    setNewTitleName("");
+      setStatus(`Title ${cleaned} created.`);
+      setNewTitleName("");
+    } catch (err) {
+      console.error("Failed to create blank title:", err);
+      setStatus("Failed to create title.");
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const triggerFilePicker = () => {
     fileInputRef.current?.click();
