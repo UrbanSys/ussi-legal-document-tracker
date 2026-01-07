@@ -226,3 +226,46 @@ def delete_encumbrance(
 
     db.delete(db_encumbrance)
     db.commit()
+
+@router.delete(
+    "/{title_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_title_document(title_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a title document and all associated encumbrances.
+    """
+    title_doc = (
+        db.query(TitleDocument)
+        .filter(TitleDocument.id == title_id)
+        .first()
+    )
+
+    if not title_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Title document not found",
+        )
+
+    try:
+        # Delete encumbrances explicitly
+        db.query(Encumbrance).filter(
+            Encumbrance.title_document_id == title_id
+        ).delete(synchronize_session=False)
+
+        # Optionally delete the file from disk
+        if title_doc.file_path and os.path.exists(title_doc.file_path):
+            os.remove(title_doc.file_path)
+
+        # Delete the title document
+        db.delete(title_doc)
+        db.commit()
+
+        return None  # 204 No Content
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete title document: {str(e)}",
+        )
