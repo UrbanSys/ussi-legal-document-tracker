@@ -14,6 +14,9 @@ class TitleDocument(Base):
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("Project.id"), nullable=False)
     file_path = Column(String(500), nullable=False)
+    title_number = Column(String(100), nullable=True)
+    short_legal = Column(String(200), nullable=True)
+    legal_description = Column(String(2000), nullable=True)
     uploaded_by = Column(String(200), nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

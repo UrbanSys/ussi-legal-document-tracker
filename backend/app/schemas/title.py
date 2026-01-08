@@ -70,12 +70,22 @@ class EncumbranceResponse(EncumbranceBase):
 class TitleDocumentBase(BaseModel):
     """Base title document information"""
     file_path: str
+    title_number: Optional[str] = None
+    short_legal: Optional[str] = None
+    legal_description: Optional[str] = None
     uploaded_by: Optional[str] = None
 
 
 class TitleDocumentCreate(TitleDocumentBase):
     """Schema for creating a title document"""
     project_id: int
+
+
+class TitleDocumentUpdate(BaseModel):
+    """Schema for updating a title document"""
+    title_number: Optional[str] = None
+    short_legal: Optional[str] = None
+    legal_description: Optional[str] = None
 
 
 class TitleDocumentResponse(TitleDocumentBase):
