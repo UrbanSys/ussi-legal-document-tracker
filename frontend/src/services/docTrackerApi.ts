@@ -182,6 +182,7 @@ export async function createDocumentTask(payload: DocumentTaskCreatePayload): Pr
 
 export async function updateDocumentTask(taskId: number, payload: DocumentTaskUpdatePayload): Promise<DocumentTask> {
   if (!taskId) throw new Error("Task ID is required");
+  console.log(payload)
   return request<DocumentTask>(`/documents/${taskId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

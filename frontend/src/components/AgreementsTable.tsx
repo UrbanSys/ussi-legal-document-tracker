@@ -14,7 +14,7 @@ const headerLabels = [
 interface AgreementsTableProps {
   rows: AgreementRow[];
   statusOptions: DocumentTaskStatus[];
-  onFieldChange: (index: number, field: string, value: string) => void;
+  onFieldChange: (index: number, field: string, value: string|number) => void;
   onAddRow: () => void;
   onRemoveRow: () => void;
 }
@@ -113,7 +113,7 @@ export function AgreementsTable({
                     <select
                       value={row.status_id ?? ''}
                       onChange={(e) =>
-                        onFieldChange(index, 'status_id', e.target.value)
+                        onFieldChange(index, 'status_id', Number(e.target.value))
                       }
                     >
                       {statusOptions.map((s) => (

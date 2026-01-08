@@ -15,7 +15,7 @@ interface PlanSectionProps {
   name: string;
   rows: PlanRow[];
   statusOptions: DocumentTaskStatus[];
-  onFieldChange: (name: string, index: number, field: string, value: string) => void;
+  onFieldChange: (name: string, index: number, field: string, value: string | number) => void;
   onAddRow: (name: string) => void;
   onRemoveRow: (name: string) => void;
   onRemovePlan: (name: string) => void;
@@ -126,7 +126,7 @@ export function PlanSection({
                     <select
                       value={row.status_id ?? ''}
                       onChange={(e) =>
-                        onFieldChange(name, index, 'Status', e.target.value)
+                        onFieldChange(name, index, 'status_id', Number(e.target.value))
                       }
                     >
                       {statusOptions.map((s) => (

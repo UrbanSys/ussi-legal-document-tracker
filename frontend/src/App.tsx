@@ -266,6 +266,7 @@ function App() {
     signatories: row.Signatories || null,
     condition_of_approval: row["Condition of Approval"] || null,
     circulation_notes: row["Circulation Notes"] || null,
+    document_status_id:row.status_id
   });
 
   const organizeDocumentTasks = (
@@ -338,7 +339,7 @@ function App() {
     }));
   };
 
-  const handleAgreementFieldChange = (index: number, field: string, value: string) => {
+  const handleAgreementFieldChange = (index: number, field: string, value: string | number) => {
     updateTracker((prev) => {
       const updatedRow = { ...prev.new_agreements[index], [field]: value };
       debounceSaveDocumentTask(updatedRow, null, index + 1);
@@ -350,20 +351,32 @@ function App() {
     });
   };
 
-  const handlePlanFieldChange = (planName: string, index: number, field: string, value: string) => {
+  const handlePlanFieldChange = (
+    planName: string,
+    rowIndex: number,
+    field: string,
+    value: string | number
+  ) => {
     updateTracker((prev) => {
-      const planRows = prev.plans?.[planName] ?? [];
-      const updatedRow = { ...planRows[index], [field]: value };
-      const category = docCategories.find((c) => c.code === planName);
-      debounceSaveDocumentTask(updatedRow, category?.id ?? null, index + 1);
-      return {
-        plans: {
-          ...(prev.plans ?? {}),
-          [planName]: planRows.map((row, idx) => (idx === index ? updatedRow : row)),
-        },
-      };
+      const updatedPlans = { ...(prev.plans ?? {}) };
+      const rows = updatedPlans[planName] ?? [];
+
+      const updatedRow = { ...rows[rowIndex], [field]: value };
+
+      updatedPlans[planName] = rows.map((row, i) =>
+        i === rowIndex ? updatedRow : row
+      );
+
+      // Send save request if backend_id exists
+      if (updatedRow.backend_id) {
+        const category = docCategories.find((c) => c.code === planName);
+        debounceSaveDocumentTask(updatedRow, category?.id ?? null, rowIndex + 1);
+      }
+
+      return { plans: updatedPlans };
     });
   };
+
 
   const debounceSaveDocumentTask = (row: AgreementRow | PlanRow, categoryId: number | null, itemNo: number) => {
     const taskId = row.backend_id;
@@ -651,70 +664,71 @@ function App() {
 
     try {
       const project = await fetchProjectByNumber(projNum);
+      if (!project) return;
 
-      if (project) {
-        setCurrentProjectId(project.id);
+      setCurrentProjectId(project.id);
 
-        const titles: Record<string, TitleData> = {};
-        project.title_documents?.forEach((td) => {
-          titles[`TITLE-${td.id}`] = {
-            legal_desc: "",
-            existing_encumbrances_on_title:
-              td.encumbrances?.map((e) => ({
-                id: uniqueId(),
-                backend_id: e.id,
-                "Document #": e.document_number || "",
-                Description: e.description || "",
-                Signatories: e.signatories || "",
-                action_id: e.action_id ?? null,
-                "Circulation Notes": e.circulation_notes || "",
-                status_id: e.status_id ?? null,
-              })) || [],
-          };
-        });
-
-        const documentTasks = await fetchDocumentTasks(project.id);
-        const { newAgreements, plans } = organizeDocumentTasks(documentTasks, docCategories);
-
-        let finalNewAgreements = newAgreements;
-        if (newAgreements.length === 0) {
-          const defaultRow = createAgreementRow(docStatuses);
-          try {
-            const payload = buildDocumentTaskPayload(defaultRow, project.id, null, 1);
-            const created = await createDocumentTask(payload);
-            defaultRow.backend_id = created.id;
-          } catch (err) {
-            console.error("Failed to create default agreement row:", err);
-          }
-          finalNewAgreements = [defaultRow];
-        }
-
-        const existingPlanKeys = Object.keys(plans);
-
-        setTracker({
-          header: { ...PROGRAM_METADATA },
-          project_number: project.proj_num,
+      const titles: Record<string, TitleData> = {};
+      project.title_documents?.forEach((td) => {
+        titles[`TITLE-${td.id}`] = {
           legal_desc: "",
-          existing_encumbrances_on_title: [],
-          new_agreements: finalNewAgreements,
-          plans,
-          titles,
-        });
-        setPlanOrder(existingPlanKeys);
-        setStatus(`Project ${projNum} loaded successfully.`);
+          existing_encumbrances_on_title:
+            td.encumbrances?.map((e) => ({
+              id: uniqueId(),
+              backend_id: e.id,
+              "Document #": e.document_number || "",
+              Description: e.description || "",
+              Signatories: e.signatories || "",
+              action_id: e.action_id ?? null,
+              "Circulation Notes": e.circulation_notes || "",
+              status_id: e.status_id ?? null, // preserve backend status
+            })) || [],
+        };
+      });
+
+      // Wait until docStatuses are loaded
+      if (docStatuses.length === 0) {
+        await fetchDocumentStatuses().then((statuses) => setDocStatuses(statuses));
       }
+
+      const documentTasks = await fetchDocumentTasks(project.id);
+      const { newAgreements, plans } = organizeDocumentTasks(documentTasks, docCategories);
+
+      // If no new agreements, create default with proper status
+      const finalNewAgreements =
+        newAgreements.length > 0
+          ? newAgreements
+          : [createAgreementRow(docStatuses)]; // use loaded statuses
+
+      // For plans, make sure we assign status_id if missing
+      const fixedPlans: Record<string, PlanRow[]> = {};
+      Object.entries(plans).forEach(([key, rows]) => {
+        fixedPlans[key] = rows.map((r) => ({
+          ...r,
+          status_id: r.status_id ?? docStatuses[0]?.id ?? null,
+        }));
+      });
+
+      setTracker({
+        header: { ...PROGRAM_METADATA },
+        project_number: project.proj_num,
+        legal_desc: "",
+        existing_encumbrances_on_title: [],
+        new_agreements: finalNewAgreements,
+        plans: fixedPlans,
+        titles,
+      });
+
+      setPlanOrder(Object.keys(fixedPlans));
+      setStatus(`Project ${projNum} loaded successfully.`);
     } catch (err) {
-      if ((err as Error).message.includes("404")) {
-        handleProjectNotFound(projNum);
-        setStatus(`Project ${projNum} not found. Please enter details to create a new project.`);
-      } else {
-        setStatus(`Failed to load project: ${(err as Error).message}`);
-        console.error(err);
-      }
+      console.error(err);
+      setStatus(`Failed to load project: ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
   };
+
 
   const runDocumentGeneration = async () => {
     setLoading(true);
