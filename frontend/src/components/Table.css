@@ -79,7 +79,6 @@
   font-style: italic;
 }
 
-<<<<<<< Updated upstream
 .status-row td {
   transition: background-color 0.15s ease;
 }
@@ -94,7 +93,8 @@
 
 .status-client-for-execution td {
   background-color: #fff88f;
-=======
+}
+
 /* Checkbox column */
 .checkbox-col {
   width: 40px;
@@ -166,5 +166,4 @@
 
 .bulk-action-bar .btn-secondary:hover {
   background: #cbd5e1;
->>>>>>> Stashed changes
 }
