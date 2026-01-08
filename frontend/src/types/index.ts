@@ -50,6 +50,9 @@ export interface TitleDocument {
   id: number;
   project_id: number;
   file_path: string;
+  title_number: string | null;
+  short_legal: string | null;
+  legal_description: string | null;
   uploaded_by: string | null;
   uploaded_at: string;
   encumbrances: Encumbrance[];
