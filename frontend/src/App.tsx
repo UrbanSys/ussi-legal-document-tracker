@@ -179,6 +179,12 @@ function App() {
   const [encStatuses, setEncStatuses] = useState<EncumbranceStatus[]>([]);
   const [docCategories, setDocCategories] = useState<DocumentCategory[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+  const [currentProject, setCurrentProject] = useState<{
+    name: string;
+    municipality: string;
+    surveyor_name: string;
+  } | null>(null);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const buildEncumbrancePayload = (row: EncumbranceRow) => ({
     document_number: row["Document #"],
@@ -667,6 +673,11 @@ function App() {
 
       if (project) {
         setCurrentProjectId(project.id);
+        setCurrentProject({
+          name: project.name || "",
+          municipality: project.municipality || "",
+          surveyor_name: project.surveyor?.name || "",
+        });
 
         const titles: Record<string, TitleData> = {};
         project.title_documents?.forEach((td) => {
@@ -816,6 +827,23 @@ function App() {
           <h1>USSI Document Tracker</h1>
           <span className="version">{PROGRAM_METADATA.program_version}</span>
         </div>
+        <div className="header-project-info">
+          {currentProject ? (
+            <>
+              <span className="project-detail">
+                <strong>Name:</strong> {currentProject.name}
+              </span>
+              <span className="project-detail">
+                <strong>Surveyor:</strong> {currentProject.surveyor_name || "—"}
+              </span>
+              <span className="project-detail">
+                <strong>Municipality:</strong> {currentProject.municipality || "—"}
+              </span>
+            </>
+          ) : (
+            <span className="project-detail empty">No project loaded</span>
+          )}
+        </div>
         <div className="header-project">
           <label>Project</label>
           <input
@@ -833,6 +861,63 @@ function App() {
           </button>
         </div>
       </header>
+
+      <section className="instructions-section">
+        <button
+          className="instructions-toggle"
+          onClick={() => setShowInstructions(!showInstructions)}
+        >
+          {showInstructions ? "▼" : "▶"} How to Use This Application
+        </button>
+        {showInstructions && (
+          <div className="instructions-content">
+            <div className="instructions-grid">
+              <div className="instruction-step">
+                <span className="step-number">1</span>
+                <div>
+                  <strong>Load a Project</strong>
+                  <p>Enter a project number and click "Load". If the project doesn't exist, you'll be prompted to create it.</p>
+                </div>
+              </div>
+              <div className="instruction-step">
+                <span className="step-number">2</span>
+                <div>
+                  <strong>Import Title (PDF)</strong>
+                  <p>Upload one or more title certificate PDFs to automatically extract existing encumbrances, or manually add encumbrances if needed.</p>
+                </div>
+              </div>
+              <div className="instruction-step">
+                <span className="step-number">3</span>
+                <div>
+                  <strong>Manage Encumbrances</strong>
+                  <p>Review and update encumbrance details including action required, signatories, and status.</p>
+                </div>
+              </div>
+              <div className="instruction-step">
+                <span className="step-number">4</span>
+                <div>
+                  <strong>New Agreements</strong>
+                  <p>Add new agreements concurrent with registration. These are automatically saved.</p>
+                </div>
+              </div>
+              <div className="instruction-step">
+                <span className="step-number">5</span>
+                <div>
+                  <strong>Add Plans</strong>
+                  <p>Select a plan type (e.g., Subdivision, URW) from the dropdown or create a new plan type.</p>
+                </div>
+              </div>
+              <div className="instruction-step">
+                <span className="step-number">6</span>
+                <div>
+                  <strong>Export to Excel</strong>
+                  <p>Click "Export to Excel" to download the tracker data as a spreadsheet.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
       {showCreateProjectModal && (
         <section className="create-project-bar">

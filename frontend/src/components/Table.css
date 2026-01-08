@@ -79,6 +79,7 @@
   font-style: italic;
 }
 
+<<<<<<< Updated upstream
 .status-row td {
   transition: background-color 0.15s ease;
 }
@@ -93,4 +94,77 @@
 
 .status-client-for-execution td {
   background-color: #fff88f;
+=======
+/* Checkbox column */
+.checkbox-col {
+  width: 40px;
+  text-align: center;
+}
+
+.checkbox-col input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.selected-row {
+  background: #eff6ff;
+}
+
+.selected-row td {
+  border-bottom-color: #dbeafe;
+}
+
+/* Bulk action bar */
+.bulk-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #eff6ff;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.bulk-selection-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.bulk-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bulk-action-group label {
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.bulk-action-group select {
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5e1;
+  font-size: 0.85rem;
+  min-width: 150px;
+}
+
+.bulk-action-group button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.bulk-action-bar .btn-secondary {
+  margin-left: auto;
+  background: #e2e8f0;
+  color: #475569;
+  box-shadow: none;
+}
+
+.bulk-action-bar .btn-secondary:hover {
+  background: #cbd5e1;
+>>>>>>> Stashed changes
 }
