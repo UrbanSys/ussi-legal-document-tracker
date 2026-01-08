@@ -68,7 +68,12 @@ export function PlanSection({
               </tr>
             ) : (
               rows.map((row, index) => (
-                <tr key={`${name}-${row.id ?? index}`}>
+                <tr
+                  key={`${name}-${row.id ?? index}`}
+                  className={`status-row status-${(row['Status'] ?? statusOptions[0])
+                    .toLowerCase()
+                    .replace(/\s+/g, '-')}`}
+                >
                   <td>{index + 1}</td>
                   <td>
                     <input

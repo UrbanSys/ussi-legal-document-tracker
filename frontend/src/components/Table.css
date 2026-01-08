@@ -78,3 +78,19 @@
   color: #94a3b8;
   font-style: italic;
 }
+
+.status-row td {
+  transition: background-color 0.15s ease;
+}
+
+.status-prepared td {
+  background-color: #9dffb4;
+}
+
+.status-complete td, .status-no-action-required td {
+  background-color: #aaaaaa;
+}
+
+.status-client-for-execution td {
+  background-color: #fff88f;
+}

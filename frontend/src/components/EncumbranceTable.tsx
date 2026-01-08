@@ -69,76 +69,92 @@ export function EncumbranceTable({
                 </td>
               </tr>
             ) : (
-              rows.map((row, index) => (
-                <tr key={`${name}-${row.id ?? index}`}>
-                  <td>{index + 1}</td>
-                  <td>
-                    <input
-                      value={row['Document #'] ?? ''}
-                      onChange={(e) =>
-                        onFieldChange(name, index, 'Document #', e.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={row['Description'] ?? ''}
-                      onChange={(e) =>
-                        onFieldChange(name, index, 'Description', e.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <textarea
-                      value={row['Signatories'] ?? ''}
-                      onChange={(e) =>
-                        onFieldChange(name, index, 'Signatories', e.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={row.action_id ?? ''}
-                      onChange={(e) =>
-                        onFieldChange(name, index, 'action_id', Number(e.target.value))
-                      }
-                    >
-                      {actions.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <textarea
-                      value={row['Circulation Notes'] ?? ''}
-                      onChange={(e) =>
-                        onFieldChange(
-                          name,
-                          index,
-                          'Circulation Notes',
-                          e.target.value,
-                        )
-                      }
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={row.status_id ?? ''}
-                      onChange={(e) =>
-                        onFieldChange(name, index, 'status_id', Number(e.target.value))
-                      }
-                    >
-                      {statuses.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))
+              rows.map((row, index) => {
+                const statusLabel =
+                  statuses.find((s) => s.id === row.status_id)?.label ?? 'unknown';
+
+                return (
+                  <tr
+                    key={`${name}-${row.id ?? index}`}
+                    className={`status-row status-${statusLabel
+                      .toLowerCase()
+                      .replace(/\s+/g, '-')}`}
+                  >
+                    <td>{index + 1}</td>
+
+                    <td>
+                      <input
+                        value={row['Document #'] ?? ''}
+                        onChange={(e) =>
+                          onFieldChange(name, index, 'Document #', e.target.value)
+                        }
+                      />
+                    </td>
+
+                    <td>
+                      <input
+                        value={row['Description'] ?? ''}
+                        onChange={(e) =>
+                          onFieldChange(name, index, 'Description', e.target.value)
+                        }
+                      />
+                    </td>
+
+                    <td>
+                      <textarea
+                        value={row['Signatories'] ?? ''}
+                        onChange={(e) =>
+                          onFieldChange(name, index, 'Signatories', e.target.value)
+                        }
+                      />
+                    </td>
+
+                    <td>
+                      <select
+                        value={row.action_id ?? ''}
+                        onChange={(e) =>
+                          onFieldChange(name, index, 'action_id', Number(e.target.value))
+                        }
+                      >
+                        {actions.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    <td>
+                      <textarea
+                        value={row['Circulation Notes'] ?? ''}
+                        onChange={(e) =>
+                          onFieldChange(
+                            name,
+                            index,
+                            'Circulation Notes',
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </td>
+
+                    <td>
+                      <select
+                        value={row.status_id ?? ''}
+                        onChange={(e) =>
+                          onFieldChange(name, index, 'status_id', Number(e.target.value))
+                        }
+                      >
+                        {statuses.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
