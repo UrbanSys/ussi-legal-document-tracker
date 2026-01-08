@@ -1,4 +1,4 @@
-import type { PlanRow } from '../types';
+import type { DocumentTaskStatus, PlanRow } from '../types';
 import './Table.css';
 
 const headerLabels = [
@@ -14,8 +14,8 @@ const headerLabels = [
 interface PlanSectionProps {
   name: string;
   rows: PlanRow[];
-  statusOptions: string[];
-  onFieldChange: (name: string, index: number, field: string, value: string) => void;
+  statusOptions: DocumentTaskStatus[];
+  onFieldChange: (name: string, index: number, field: string, value: string | number) => void;
   onAddRow: (name: string) => void;
   onRemoveRow: (name: string) => void;
   onRemovePlan: (name: string) => void;
@@ -67,13 +67,17 @@ export function PlanSection({
                 </td>
               </tr>
             ) : (
-              rows.map((row, index) => (
+              rows.map((row, index) => {
+                const statusLabel =
+                  statusOptions.find((s) => s.id === row.status_id)?.label ?? 'unknown';
+
+                return (
                 <tr
-                  key={`${name}-${row.id ?? index}`}
-                  className={`status-row status-${(row['Status'] ?? statusOptions[0])
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')}`}
-                >
+                    key={`${name}-${row.id ?? index}`}
+                    className={`status-row status-${statusLabel
+                      .toLowerCase()
+                      .replace(/\s+/g, '-')}`}
+                  >
                   <td>{index + 1}</td>
                   <td>
                     <input
@@ -127,20 +131,21 @@ export function PlanSection({
                   </td>
                   <td>
                     <select
-                      value={row['Status'] ?? statusOptions[0]}
+                      value={row.status_id ?? ''}
                       onChange={(e) =>
-                        onFieldChange(name, index, 'Status', e.target.value)
+                        onFieldChange(name, index, 'status_id', Number(e.target.value))
                       }
                     >
-                      {statusOptions.map((option) => (
-                        <option value={option} key={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))
+                      {statusOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

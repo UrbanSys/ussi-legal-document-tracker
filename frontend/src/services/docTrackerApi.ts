@@ -149,6 +149,10 @@ export async function fetchEncumbranceStatuses(): Promise<EncumbranceStatus[]> {
   return request<EncumbranceStatus[]>("/lookups/encumbrance-statuses");
 }
 
+export async function fetchDocumentStatuses(): Promise<EncumbranceStatus[]> {
+  return request<EncumbranceStatus[]>("/lookups/new-document-statuses");
+}
+
 // Document Categories (for plan types)
 export async function fetchDocumentCategories(): Promise<DocumentCategory[]> {
   return request<DocumentCategory[]>("/documents/category");
@@ -178,6 +182,7 @@ export async function createDocumentTask(payload: DocumentTaskCreatePayload): Pr
 
 export async function updateDocumentTask(taskId: number, payload: DocumentTaskUpdatePayload): Promise<DocumentTask> {
   if (!taskId) throw new Error("Task ID is required");
+  console.log(payload)
   return request<DocumentTask>(`/documents/${taskId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

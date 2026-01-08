@@ -1,4 +1,4 @@
-import type { AgreementRow } from '../types';
+import type { AgreementRow, DocumentTaskStatus } from '../types';
 import './Table.css';
 
 const headerLabels = [
@@ -13,8 +13,8 @@ const headerLabels = [
 
 interface AgreementsTableProps {
   rows: AgreementRow[];
-  statusOptions: string[];
-  onFieldChange: (index: number, field: string, value: string) => void;
+  statusOptions: DocumentTaskStatus[];
+  onFieldChange: (index: number, field: string, value: string|number) => void;
   onAddRow: () => void;
   onRemoveRow: () => void;
 }
@@ -60,13 +60,17 @@ export function AgreementsTable({
                 </td>
               </tr>
             ) : (
-              rows.map((row, index) => (
+              rows.map((row, index) => {
+                const statusLabel =
+                  statusOptions.find((s) => s.id === row.status_id)?.label ?? 'unknown';
+
+                return (
                 <tr
-                  key={`${name}-${row.id ?? index}`}
-                  className={`status-row status-${(row['Status'] ?? statusOptions[0])
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')}`}
-                >
+                    key={`${name}-${row.id ?? index}`}
+                    className={`status-row status-${statusLabel
+                      .toLowerCase()
+                      .replace(/\s+/g, '-')}`}
+                  >
                   <td>{index + 1}</td>
                   <td>
                     <input
@@ -114,20 +118,21 @@ export function AgreementsTable({
                   </td>
                   <td>
                     <select
-                      value={row['Status'] ?? statusOptions[0]}
+                      value={row.status_id ?? ''}
                       onChange={(e) =>
-                        onFieldChange(index, 'Status', e.target.value)
+                        onFieldChange(index, 'status_id', Number(e.target.value))
                       }
                     >
-                      {statusOptions.map((option) => (
-                        <option value={option} key={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))
+                      {statusOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

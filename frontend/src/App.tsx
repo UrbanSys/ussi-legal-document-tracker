@@ -15,6 +15,7 @@ import type {
   DocumentCategory,
   Surveyor,
   DocumentTask,
+  DocumentTaskStatus,
 } from "./types";
 
 import {
@@ -37,18 +38,9 @@ import {
   deleteDocumentTask,
   exportProjectToExcel,
   blankTitle,
+  fetchDocumentStatuses,
 } from "./services/docTrackerApi";
 import "./App.css";
-
-const STATUS_OPTIONS = [
-  "---",
-  "Prepared",
-  "Complete",
-  "No Action Required",
-  "Client for Execution",
-  "City for Execution",
-  "Third party for Execution",
-];
 
 const PROGRAM_METADATA = {
   program_name: "USSI DOCUMENT TRACKER",
@@ -72,37 +64,38 @@ const createEncumbranceRow = (encActions: EncumbranceAction[], encStatuses: Encu
   status_id: encStatuses[0]?.id ?? null,
 });
 
-const createAgreementRow = (): AgreementRow => ({
+const createAgreementRow = (statusOptions: DocumentTaskStatus[]): AgreementRow => ({
   id: uniqueId(),
   "Document/Desc": "",
   "Copies/Dept": "",
   Signatories: "",
   "Condition of Approval": "",
   "Circulation Notes": "",
-  Status: STATUS_OPTIONS[0],
+  status_id: statusOptions[0]?.id ?? null,
 });
 
-const createPlanRow = (desc = ""): PlanRow => ({
+const createPlanRow = (statusOptions: DocumentTaskStatus[], desc = ""): PlanRow => ({
   id: uniqueId(),
   "Document/Desc": desc,
   "Copies/Dept": "",
   Signatories: "",
   "Condition of Approval": "",
   "Circulation Notes": "",
-  Status: STATUS_OPTIONS[0],
+  status_id: statusOptions[0]?.id ?? null,
 });
 
-const seedPlanRows = (): PlanRow[] => [
-  createPlanRow("Surveyor's Affidavit"),
-  createPlanRow("Consent"),
+
+const seedPlanRows = (statusOptions: DocumentTaskStatus[]): PlanRow[] => [
+  createPlanRow(statusOptions,"Surveyor's Affidavit"),
+  createPlanRow(statusOptions,"Consent"),
 ];
 
 const buildDefaultTracker = (): TrackerState => ({
   header: { ...PROGRAM_METADATA },
   legal_desc: "",
   existing_encumbrances_on_title: [],
-  new_agreements: [createAgreementRow()],
-  plans: { SUB1: seedPlanRows() },
+  new_agreements: [],
+  plans: {},
   titles: {},
 });
 
@@ -182,6 +175,7 @@ function App() {
   const encumbranceSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const documentTaskSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [encActions, setEncActions] = useState<EncumbranceAction[]>([]);
+  const [docStatuses, setDocStatuses] = useState<DocumentTaskStatus[]>([]);
   const [encStatuses, setEncStatuses] = useState<EncumbranceStatus[]>([]);
   const [docCategories, setDocCategories] = useState<DocumentCategory[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
@@ -208,16 +202,25 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (docStatuses.length > 0 && tracker.new_agreements.length === 1 && tracker.plans.SUB1.length === 2) {
+      // Rebuild default rows with real status IDs
+      setTracker(buildDefaultTracker());
+    }
+  }, [docStatuses]);
+
+  useEffect(() => {
     const loadLookups = async () => {
       try {
-        const [actions, statuses, categories] = await Promise.all([
+        const [actions, statuses, categories,dstatuses] = await Promise.all([
           fetchEncumbranceActions(),
           fetchEncumbranceStatuses(),
           fetchDocumentCategories(),
+          fetchDocumentStatuses()
         ]);
         setEncActions(actions);
         setEncStatuses(statuses);
         setDocCategories(categories);
+        setDocStatuses(dstatuses)
       } catch (err) {
         console.error("Failed to load lookups:", err);
       }
@@ -244,7 +247,7 @@ function App() {
     Signatories: task.signatories || "",
     "Condition of Approval": task.condition_of_approval || "",
     "Circulation Notes": task.circulation_notes || "",
-    Status: task.document_status?.label || STATUS_OPTIONS[0],
+    status_id: task.document_status?.id || 0,
     item_no: task.item_no,
     category_id: task.category_id,
   });
@@ -263,6 +266,7 @@ function App() {
     signatories: row.Signatories || null,
     condition_of_approval: row["Condition of Approval"] || null,
     circulation_notes: row["Circulation Notes"] || null,
+    document_status_id:row.status_id
   });
 
   const organizeDocumentTasks = (
@@ -335,7 +339,7 @@ function App() {
     }));
   };
 
-  const handleAgreementFieldChange = (index: number, field: string, value: string) => {
+  const handleAgreementFieldChange = (index: number, field: string, value: string | number) => {
     updateTracker((prev) => {
       const updatedRow = { ...prev.new_agreements[index], [field]: value };
       debounceSaveDocumentTask(updatedRow, null, index + 1);
@@ -347,20 +351,32 @@ function App() {
     });
   };
 
-  const handlePlanFieldChange = (planName: string, index: number, field: string, value: string) => {
+  const handlePlanFieldChange = (
+    planName: string,
+    rowIndex: number,
+    field: string,
+    value: string | number
+  ) => {
     updateTracker((prev) => {
-      const planRows = prev.plans?.[planName] ?? [];
-      const updatedRow = { ...planRows[index], [field]: value };
-      const category = docCategories.find((c) => c.code === planName);
-      debounceSaveDocumentTask(updatedRow, category?.id ?? null, index + 1);
-      return {
-        plans: {
-          ...(prev.plans ?? {}),
-          [planName]: planRows.map((row, idx) => (idx === index ? updatedRow : row)),
-        },
-      };
+      const updatedPlans = { ...(prev.plans ?? {}) };
+      const rows = updatedPlans[planName] ?? [];
+
+      const updatedRow = { ...rows[rowIndex], [field]: value };
+
+      updatedPlans[planName] = rows.map((row, i) =>
+        i === rowIndex ? updatedRow : row
+      );
+
+      // Send save request if backend_id exists
+      if (updatedRow.backend_id) {
+        const category = docCategories.find((c) => c.code === planName);
+        debounceSaveDocumentTask(updatedRow, category?.id ?? null, rowIndex + 1);
+      }
+
+      return { plans: updatedPlans };
     });
   };
+
 
   const debounceSaveDocumentTask = (row: AgreementRow | PlanRow, categoryId: number | null, itemNo: number) => {
     const taskId = row.backend_id;
@@ -382,7 +398,7 @@ function App() {
   };
 
   const addAgreementRow = async () => {
-    const newRow = createAgreementRow();
+    const newRow = createAgreementRow(docStatuses);
 
     if (currentProjectId) {
       try {
@@ -419,7 +435,7 @@ function App() {
   };
 
   const addPlanRow = async (planName: string) => {
-    const newRow = createPlanRow();
+    const newRow = createPlanRow(docStatuses);
     const category = docCategories.find((c) => c.code === planName);
     const planRows = tracker.plans?.[planName] ?? [];
 
@@ -427,22 +443,20 @@ function App() {
       try {
         const payload = buildDocumentTaskPayload(newRow, currentProjectId, category.id, planRows.length + 1);
         const created = await createDocumentTask(payload);
-        newRow.backend_id = created.id;
+        newRow.backend_id = created.id;  // <-- assign backend_id here
       } catch (err) {
         console.error("Failed to create plan row in backend:", err);
       }
     }
 
-    updateTracker((prev) => {
-      const existingRows = prev.plans?.[planName] ?? [];
-      return {
-        plans: {
-          ...(prev.plans ?? {}),
-          [planName]: [...existingRows, newRow],
-        },
-      };
-    });
+    updateTracker((prev) => ({
+      plans: {
+        ...(prev.plans ?? {}),
+        [planName]: [...planRows, newRow],
+      },
+    }));
   };
+
 
   const removePlanRow = async (planName: string) => {
     const planRows = tracker.plans?.[planName] ?? [];
@@ -535,7 +549,7 @@ function App() {
       return;
     }
 
-    const initialRows = seedPlanRows();
+    const initialRows = seedPlanRows(docStatuses);
 
     if (currentProjectId && category) {
       for (let i = 0; i < initialRows.length; i++) {
@@ -677,7 +691,7 @@ function App() {
 
         let finalNewAgreements = newAgreements;
         if (newAgreements.length === 0) {
-          const defaultRow = createAgreementRow();
+          const defaultRow = createAgreementRow(docStatuses);
           try {
             const payload = buildDocumentTaskPayload(defaultRow, project.id, null, 1);
             const created = await createDocumentTask(payload);
@@ -714,6 +728,7 @@ function App() {
       setLoading(false);
     }
   };
+
 
   const runDocumentGeneration = async () => {
     setLoading(true);
@@ -1097,7 +1112,7 @@ function App() {
                         {sec === "agreements" && (
                           <AgreementsTable
                             rows={tracker.new_agreements ?? []}
-                            statusOptions={STATUS_OPTIONS}
+                            statusOptions={docStatuses}
                             onFieldChange={handleAgreementFieldChange}
                             onAddRow={addAgreementRow}
                             onRemoveRow={removeAgreementRow}
@@ -1199,10 +1214,10 @@ function App() {
                                             <PlanSection
                                               name={planName}
                                               rows={rows}
-                                              statusOptions={STATUS_OPTIONS}
+                                              statusOptions={docStatuses}
                                               onFieldChange={handlePlanFieldChange}
-                                              onAddRow={addPlanRow}
-                                              onRemoveRow={removePlanRow}
+                                              onAddRow={() => addPlanRow(planName)}
+                                              onRemoveRow={() => removePlanRow(planName)}
                                               onRemovePlan={(name) => {
                                                 removePlan(name);
                                                 setPlanOrder((prev) =>

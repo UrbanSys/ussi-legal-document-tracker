@@ -87,7 +87,7 @@
   background-color: #9dffb4;
 }
 
-.status-complete td, .status-no-action-required {
+.status-complete td, .status-no-action-required td{
   background-color: #aaaaaa;
 }
 
