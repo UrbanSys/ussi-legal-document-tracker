@@ -61,6 +61,22 @@ def list_document_categories(db: Session = Depends(get_db)):
     categories = db.query(DocumentCategory).order_by(DocumentCategory.id).all()
     return categories
 
+@router.delete(
+    "/category/{category_id}",
+    status_code=status.HTTP_204_NO_CONTENT)
+def delete_document_status(category_id: int, db: Session = Depends(get_db)):
+    """Delete a document status."""
+    db_task = db.query(DocumentCategory).filter(DocumentCategory.id == category_id).first()
+    if not db_task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document task not found",
+        )
+
+    db.delete(db_task)
+    db.commit()
+
+
 @router.get("/{task_id}", response_model=DocumentTaskResponse)
 def get_document_task(task_id: int, db: Session = Depends(get_db)):
     """Get a specific document task."""

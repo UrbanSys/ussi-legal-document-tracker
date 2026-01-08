@@ -205,8 +205,9 @@ export async function exportProjectToExcel(projectId: number): Promise<string> {
   }
   
   // Get filename from Content-Disposition header or use default
-  const contentDisposition = response.headers.get("Content-Disposition");
+  const contentDisposition = response.headers.get("content-disposition");
   let filename = "document_tracking.xlsx";
+  console.log(contentDisposition)
   if (contentDisposition) {
     const match = contentDisposition.match(/filename="(.+)"/);
     if (match) filename = match[1];

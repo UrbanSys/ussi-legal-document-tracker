@@ -178,6 +178,7 @@ export interface DocumentTaskUpdatePayload {
 }
 
 export interface ImportTitleResponse {
+  id: any;
   encumbrances: Encumbrance[] | undefined;
   existing_encumbrances_on_title?: Encumbrance[];
   inst_on_title?: Encumbrance[];
