@@ -1,4 +1,4 @@
-import type { AgreementRow } from '../types';
+import type { AgreementRow, DocumentTaskStatus } from '../types';
 import './Table.css';
 
 const headerLabels = [
@@ -13,7 +13,7 @@ const headerLabels = [
 
 interface AgreementsTableProps {
   rows: AgreementRow[];
-  statusOptions: string[];
+  statusOptions: DocumentTaskStatus[];
   onFieldChange: (index: number, field: string, value: string) => void;
   onAddRow: () => void;
   onRemoveRow: () => void;
@@ -63,9 +63,6 @@ export function AgreementsTable({
               rows.map((row, index) => (
                 <tr
                   key={`${name}-${row.id ?? index}`}
-                  className={`status-row status-${(row['Status'] ?? statusOptions[0])
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')}`}
                 >
                   <td>{index + 1}</td>
                   <td>
@@ -114,16 +111,16 @@ export function AgreementsTable({
                   </td>
                   <td>
                     <select
-                      value={row['Status'] ?? statusOptions[0]}
+                      value={row.status_id ?? ''}
                       onChange={(e) =>
-                        onFieldChange(index, 'Status', e.target.value)
+                        onFieldChange(index, 'status_id', e.target.value)
                       }
                     >
-                      {statusOptions.map((option) => (
-                        <option value={option} key={option}>
-                          {option}
-                        </option>
-                      ))}
+                      {statusOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))}
                     </select>
                   </td>
                 </tr>

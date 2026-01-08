@@ -1,4 +1,4 @@
-import type { PlanRow } from '../types';
+import type { DocumentTaskStatus, PlanRow } from '../types';
 import './Table.css';
 
 const headerLabels = [
@@ -14,7 +14,7 @@ const headerLabels = [
 interface PlanSectionProps {
   name: string;
   rows: PlanRow[];
-  statusOptions: string[];
+  statusOptions: DocumentTaskStatus[];
   onFieldChange: (name: string, index: number, field: string, value: string) => void;
   onAddRow: (name: string) => void;
   onRemoveRow: (name: string) => void;
@@ -70,9 +70,6 @@ export function PlanSection({
               rows.map((row, index) => (
                 <tr
                   key={`${name}-${row.id ?? index}`}
-                  className={`status-row status-${(row['Status'] ?? statusOptions[0])
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')}`}
                 >
                   <td>{index + 1}</td>
                   <td>
@@ -127,16 +124,16 @@ export function PlanSection({
                   </td>
                   <td>
                     <select
-                      value={row['Status'] ?? statusOptions[0]}
+                      value={row.status_id ?? ''}
                       onChange={(e) =>
                         onFieldChange(name, index, 'Status', e.target.value)
                       }
                     >
-                      {statusOptions.map((option) => (
-                        <option value={option} key={option}>
-                          {option}
-                        </option>
-                      ))}
+                      {statusOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))}
                     </select>
                   </td>
                 </tr>

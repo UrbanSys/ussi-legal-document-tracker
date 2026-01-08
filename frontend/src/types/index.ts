@@ -101,7 +101,7 @@ export interface AgreementRow {
   Signatories: string;
   "Condition of Approval": string;
   "Circulation Notes": string;
-  Status: string;
+  status_id: number | null;
   item_no?: number;
   category_id?: number | null;
 }
