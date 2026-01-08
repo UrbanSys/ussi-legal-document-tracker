@@ -14,8 +14,7 @@ class ExcelGeneratorService:
         worksheet.merge_range(row,0,row,col_width-1,text,format)
 
     @staticmethod
-    def export_as_excel(fileobj,encumbrances = [], plans = {}, new_agreements = [],proj_num="0000.0000.00"):
-        print("exporting")
+    def export_as_excel(fileobj,encumbrances = [], plans = {}, new_agreements = [],proj_num="0000.0000.00",proj_name="PROJECT", municipality="MUNICIPALIY"):
 
         workbook = xlsxwriter.Workbook(fileobj, {"in_memory": True})
         worksheet = workbook.add_worksheet()
@@ -73,7 +72,7 @@ class ExcelGeneratorService:
         lastrow = 0
 
         row = 0
-        ExcelGeneratorService.write_header_row(worksheet, row,7,title_format,"%s - PROJECT - DOCUMENT TRACKING"%proj_num)
+        ExcelGeneratorService.write_header_row(worksheet, row,7,title_format,"%s - %s - DOCUMENT TRACKING (Municipality: %s)"%(proj_num,proj_name,municipality))
         row += 1
         for plan_name, title in encumbrances.items():
             ExcelGeneratorService.write_header_row(worksheet, row,7,section_format,"EXISTING ENCUMBRANCES ON TITLE - %s"%plan_name)

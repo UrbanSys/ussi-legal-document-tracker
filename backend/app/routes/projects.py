@@ -229,11 +229,13 @@ def export_project_excel(project_id: int, db: Session = Depends(get_db)):
         plans=plans,
         new_agreements=exist_enc,        # per your note
         proj_num=project.proj_num,
+        proj_name=project.name,
+        municipality = project.municipality
     )
 
     buffer.seek(0)
 
-    filename = f"{project.proj_num}_document_tracking.xlsx"
+    filename = f"{project.proj_num}_{project.name}_document_tracking.xlsx"
 
     return StreamingResponse(
         buffer,
