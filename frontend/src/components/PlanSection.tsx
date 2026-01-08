@@ -67,10 +67,17 @@ export function PlanSection({
                 </td>
               </tr>
             ) : (
-              rows.map((row, index) => (
+              rows.map((row, index) => {
+                const statusLabel =
+                  statusOptions.find((s) => s.id === row.status_id)?.label ?? 'unknown';
+
+                return (
                 <tr
-                  key={`${name}-${row.id ?? index}`}
-                >
+                    key={`${name}-${row.id ?? index}`}
+                    className={`status-row status-${statusLabel
+                      .toLowerCase()
+                      .replace(/\s+/g, '-')}`}
+                  >
                   <td>{index + 1}</td>
                   <td>
                     <input
@@ -134,10 +141,11 @@ export function PlanSection({
                             {s.label}
                           </option>
                         ))}
-                    </select>
-                  </td>
-                </tr>
-              ))
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
