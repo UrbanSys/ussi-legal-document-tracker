@@ -664,66 +664,66 @@ function App() {
 
     try {
       const project = await fetchProjectByNumber(projNum);
-      if (!project) return;
 
-      setCurrentProjectId(project.id);
+      if (project) {
+        setCurrentProjectId(project.id);
 
-      const titles: Record<string, TitleData> = {};
-      project.title_documents?.forEach((td) => {
-        titles[`TITLE-${td.id}`] = {
+        const titles: Record<string, TitleData> = {};
+        project.title_documents?.forEach((td) => {
+          titles[`TITLE-${td.id}`] = {
+            legal_desc: "",
+            existing_encumbrances_on_title:
+              td.encumbrances?.map((e) => ({
+                id: uniqueId(),
+                backend_id: e.id,
+                "Document #": e.document_number || "",
+                Description: e.description || "",
+                Signatories: e.signatories || "",
+                action_id: e.action_id ?? null,
+                "Circulation Notes": e.circulation_notes || "",
+                status_id: e.status_id ?? null,
+              })) || [],
+          };
+        });
+
+        const documentTasks = await fetchDocumentTasks(project.id);
+        const { newAgreements, plans } = organizeDocumentTasks(documentTasks, docCategories);
+
+        let finalNewAgreements = newAgreements;
+        if (newAgreements.length === 0) {
+          const defaultRow = createAgreementRow(docStatuses);
+          try {
+            const payload = buildDocumentTaskPayload(defaultRow, project.id, null, 1);
+            const created = await createDocumentTask(payload);
+            defaultRow.backend_id = created.id;
+          } catch (err) {
+            console.error("Failed to create default agreement row:", err);
+          }
+          finalNewAgreements = [defaultRow];
+        }
+
+        const existingPlanKeys = Object.keys(plans);
+
+        setTracker({
+          header: { ...PROGRAM_METADATA },
+          project_number: project.proj_num,
           legal_desc: "",
-          existing_encumbrances_on_title:
-            td.encumbrances?.map((e) => ({
-              id: uniqueId(),
-              backend_id: e.id,
-              "Document #": e.document_number || "",
-              Description: e.description || "",
-              Signatories: e.signatories || "",
-              action_id: e.action_id ?? null,
-              "Circulation Notes": e.circulation_notes || "",
-              status_id: e.status_id ?? null, // preserve backend status
-            })) || [],
-        };
-      });
-
-      // Wait until docStatuses are loaded
-      if (docStatuses.length === 0) {
-        await fetchDocumentStatuses().then((statuses) => setDocStatuses(statuses));
+          existing_encumbrances_on_title: [],
+          new_agreements: finalNewAgreements,
+          plans,
+          titles,
+        });
+        setPlanOrder(existingPlanKeys);
+        setStatus(`Project ${projNum} loaded successfully.`);
       }
-
-      const documentTasks = await fetchDocumentTasks(project.id);
-      const { newAgreements, plans } = organizeDocumentTasks(documentTasks, docCategories);
-
-      // If no new agreements, create default with proper status
-      const finalNewAgreements =
-        newAgreements.length > 0
-          ? newAgreements
-          : [createAgreementRow(docStatuses)]; // use loaded statuses
-
-      // For plans, make sure we assign status_id if missing
-      const fixedPlans: Record<string, PlanRow[]> = {};
-      Object.entries(plans).forEach(([key, rows]) => {
-        fixedPlans[key] = rows.map((r) => ({
-          ...r,
-          status_id: r.status_id ?? docStatuses[0]?.id ?? null,
-        }));
-      });
-
-      setTracker({
-        header: { ...PROGRAM_METADATA },
-        project_number: project.proj_num,
-        legal_desc: "",
-        existing_encumbrances_on_title: [],
-        new_agreements: finalNewAgreements,
-        plans: fixedPlans,
-        titles,
-      });
-
-      setPlanOrder(Object.keys(fixedPlans));
-      setStatus(`Project ${projNum} loaded successfully.`);
     } catch (err) {
-      console.error(err);
-      setStatus(`Failed to load project: ${(err as Error).message}`);
+      if ((err as Error).message.includes("404")) {
+        handleProjectNotFound(projNum);
+        setStatus(`Project ${projNum} not found. Please enter details to create a new project.`);
+      } else {
+        setStatus(`Failed to load project: ${(err as Error).message}`);
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
