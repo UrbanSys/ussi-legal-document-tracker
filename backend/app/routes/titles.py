@@ -45,18 +45,22 @@ def create_title_document(
             f.write(contents)
 
         # Create title document record
+
+        # Process PDF and extract encumbrances
+        pdf_reader = PdfReader(file_path)
+        extracted_data = PDFProcessorService.process_title_cert(pdf_reader)
+
         title_doc = TitleDocument(
             project_id=project_id,
             file_path=file_path,
             uploaded_by="system",  # TODO: Get from auth context
+            short_legal=extracted_data["doc_short_legal"],
+            title_number=extracted_data["doc_title_num"]
         )
         db.add(title_doc)
         db.commit()
         db.refresh(title_doc)
 
-        # Process PDF and extract encumbrances
-        pdf_reader = PdfReader(file_path)
-        extracted_data = PDFProcessorService.process_title_cert(pdf_reader)
         TitleDocumentService.save_extracted_data(db, title_doc.id, extracted_data)
 
         db.refresh(title_doc)
