@@ -87,6 +87,7 @@ def create_title_document(
         # Create title document record
         title_doc = TitleDocument(
             project_id=project_id,
+            title_number=name,
             file_path="NOT_UPLOADED",
             uploaded_by="system",  # TODO: Get from auth context
         )

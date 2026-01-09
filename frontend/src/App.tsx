@@ -1177,7 +1177,7 @@ function App() {
                                               delete updatedTitles[titleName];
                                               return { titles: updatedTitles };
                                             });
-                                            setStatus(`Title ${titleName} deleted successfully.`);
+                                            setStatus(`Title deleted successfully.`);
                                           } catch (err) {
                                             console.error("Failed to delete title:", err);
                                             setStatus(`Failed to delete title ${titleName}.`);
