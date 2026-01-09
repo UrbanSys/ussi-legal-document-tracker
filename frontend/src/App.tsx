@@ -604,6 +604,7 @@ function App() {
           [titleKey]: {
             legal_desc: "",
             existing_encumbrances_on_title: [],
+            title_number: cleaned
           },
         },
       }));
@@ -683,6 +684,7 @@ function App() {
         project.title_documents?.forEach((td) => {
           titles[`TITLE-${td.id}`] = {
             legal_desc: "",
+            title_number: td.title_number || "",
             existing_encumbrances_on_title:
               td.encumbrances?.map((e) => ({
                 id: uniqueId(),
@@ -1058,7 +1060,7 @@ function App() {
                                     titleEntries.map(([titleName, titleData]) => (
                                       <EncumbranceTable
                                         key={titleName}
-                                        name={titleName}
+                                        name={titleData.title_number}
                                         rows={titleData.existing_encumbrances_on_title ?? []}
                                         actions={encActions}
                                         statuses={encStatuses}

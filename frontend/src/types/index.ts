@@ -114,6 +114,7 @@ export interface PlanRow extends AgreementRow {}
 // Tracker State Types
 export interface TitleData {
   legal_desc: string;
+  title_number: string;
   existing_encumbrances_on_title: EncumbranceRow[];
 }
 
